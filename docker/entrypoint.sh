@@ -5,6 +5,43 @@ cd /app
 
 mkdir -p /app/runtime /app/runtime/sessions /app/user_matrices /app/cache
 
+seed_cache_from_dir() {
+  seed_dir="${SIMSEARCH_SEED_CACHE_DIR:-}"
+  if [ -z "$seed_dir" ] || [ ! -d "$seed_dir" ]; then
+    return 0
+  fi
+
+  echo "[entrypoint] Checking cache seed directory: ${seed_dir}"
+  for metric in L2 IP; do
+    src_dir="${seed_dir}/${metric}"
+    dst_dir="/app/cache/${metric}"
+    [ -d "$src_dir" ] || continue
+
+    mkdir -p "$dst_dir"
+    for src_file in "$src_dir"/*_ids.npy; do
+      [ -f "$src_file" ] || continue
+      dst_file="${dst_dir}/$(basename "$src_file")"
+      if [ -s "$dst_file" ]; then
+        echo "[entrypoint] Cache mapping already exists: ${dst_file}"
+        continue
+      fi
+      echo "[entrypoint] Seeding cache mapping: ${src_file} -> ${dst_file}"
+      cp -p "$src_file" "$dst_file"
+    done
+  done
+
+  if [ ! -f "${SIMSEARCH_IMAGE_NAMES_FILE_L2:-/app/cache/L2/21000000_ids.npy}" ] && \
+     [ ! -f "${SIMSEARCH_IMAGE_NAMES_FILE_IP:-/app/cache/IP/21000000_ids.npy}" ]; then
+    echo "[entrypoint] No configured FAISS mapping file found after cache seeding."
+  fi
+}
+
+case "${SIMSEARCH_SEED_CACHE_ON_START:-1}" in
+  1|true|TRUE|yes|YES|on|ON)
+    seed_cache_from_dir
+    ;;
+esac
+
 case "${SIMSEARCH_CLEAR_USER_MATRICES_ON_START:-0}" in
   1|true|TRUE|yes|YES|on|ON)
     echo "[entrypoint] Clearing /app/user_matrices contents..."

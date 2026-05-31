@@ -1,0 +1,7 @@
+services:
+  sim-search:
+    environment:
+      SIMSEARCH_SEED_CACHE_ON_START: "${SIMSEARCH_SEED_CACHE_ON_START:-1}"
+      SIMSEARCH_SEED_CACHE_DIR: /app/cache_seed
+    volumes:
+      - ${SIMSEARCH_SEED_CACHE_ROOT:-/home/xsikyna/sim-search/cache}:/app/cache_seed:ro

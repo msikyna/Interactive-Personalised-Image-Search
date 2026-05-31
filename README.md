@@ -96,6 +96,14 @@ mkdir -p runtime user_matrices cache/L2 cache/IP
 docker compose up -d --build
 ```
 
+If the project was moved and the new `./cache` bind mount is empty or
+root-owned, seed FAISS mapping files from the old deployment cache:
+
+```bash
+SIMSEARCH_SEED_CACHE_ROOT=/home/xsikyna/sim-search/cache \
+  docker compose -f docker-compose.yml -f docker-compose.seed-cache.yml up -d --build
+```
+
 ### 3. Check logs
 ```bash
 docker compose logs -f sim-search
