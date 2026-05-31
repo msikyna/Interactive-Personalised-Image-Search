@@ -1,0 +1,16 @@
+{
+  "scaling_factor": 1.077958566712005,
+  "model": "MLOML",
+  "feedback_type": 3,
+  "feedback_type_name": "All Possible Pairs",
+  "model_params": {
+    "n_layers": 2,
+    "gamma": 0.002,
+    "activation": "tanh",
+    "lambda_reg": 7e-06
+  },
+  "feedback_params": {},
+  "distance_mode": "euclidean",
+  "updated_at": "2026-05-31T13:12:45.425083+00:00",
+  "dimension": 768
+}

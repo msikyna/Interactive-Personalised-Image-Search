@@ -1,0 +1,2115 @@
+[
+  {
+    "query_session_id": "3bc2c682-d18b-482b-ae2f-c0e14e938c74",
+    "feedback_search_id": null,
+    "timestamp": "2026-05-31T15:05:11.784442",
+    "query_type": "text",
+    "query_text": "perfect evening",
+    "query_image_index": null,
+    "query_ranking_time_ms": 69703.0,
+    "model": "OMDML",
+    "feedback_type": 2,
+    "feedback_type_name": "Single Negative & All Positives",
+    "model_params": {
+      "beta": 0.01,
+      "C": 0.02,
+      "gamma": 0.07
+    },
+    "feedback_params": {
+      "batch_mode": true
+    },
+    "scaling_factor": 1.0,
+    "distance_mode": "dot_product",
+    "distance_metric": "cosine",
+    "base_metric": null,
+    "search_pipeline": null,
+    "num_results_total": 100,
+    "num_results_logged": 100,
+    "results": [
+      {
+        "index": 11682459,
+        "image_name": "341/0014208035.jpg",
+        "distance": 0.7672183513641357
+      },
+      {
+        "index": 19415065,
+        "image_name": "558/0077109556.jpg",
+        "distance": 0.7678729295730591
+      },
+      {
+        "index": 16690568,
+        "image_name": "460/0016450824.jpg",
+        "distance": 0.7694451212882996
+      },
+      {
+        "index": 6009573,
+        "image_name": "197/0007515573.jpg",
+        "distance": 0.7711979150772095
+      },
+      {
+        "index": 2739559,
+        "image_name": "110/0003936108.jpg",
+        "distance": 0.7717849016189575
+      },
+      {
+        "index": 1106309,
+        "image_name": "057/0001980075.jpg",
+        "distance": 0.7720361948013306
+      },
+      {
+        "index": 13376364,
+        "image_name": "382/0035016342.jpg",
+        "distance": 0.7726374268531799
+      },
+      {
+        "index": 9039977,
+        "image_name": "271/0010873820.jpg",
+        "distance": 0.7733151912689209
+      },
+      {
+        "index": 17942675,
+        "image_name": "503/0054302992.jpg",
+        "distance": 0.7736100554466248
+      },
+      {
+        "index": 495495,
+        "image_name": "036/0001098789.jpg",
+        "distance": 0.7744044065475464
+      },
+      {
+        "index": 6176474,
+        "image_name": "201/0007736544.jpg",
+        "distance": 0.7746906876564026
+      },
+      {
+        "index": 9859944,
+        "image_name": "289/0011745617.jpg",
+        "distance": 0.7756037712097168
+      },
+      {
+        "index": 17820128,
+        "image_name": "501/0054207026.jpg",
+        "distance": 0.7756990194320679
+      },
+      {
+        "index": 12859834,
+        "image_name": "372/0034460917.jpg",
+        "distance": 0.775734543800354
+      },
+      {
+        "index": 8220823,
+        "image_name": "250/0009939184.jpg",
+        "distance": 0.7757362127304077
+      },
+      {
+        "index": 19151745,
+        "image_name": "552/0056799533.jpg",
+        "distance": 0.7758630514144897
+      },
+      {
+        "index": 1291695,
+        "image_name": "069/0002256860.jpg",
+        "distance": 0.7767258882522583
+      },
+      {
+        "index": 10326553,
+        "image_name": "300/0012265636.jpg",
+        "distance": 0.7772097587585449
+      },
+      {
+        "index": 1834464,
+        "image_name": "084/0002870113.jpg",
+        "distance": 0.7780510187149048
+      },
+      {
+        "index": 5756908,
+        "image_name": "186/0007146152.jpg",
+        "distance": 0.77869713306427
+      },
+      {
+        "index": 17973755,
+        "image_name": "504/0054326751.jpg",
+        "distance": 0.7788394093513489
+      },
+      {
+        "index": 2863813,
+        "image_name": "114/0004048229.jpg",
+        "distance": 0.779862642288208
+      },
+      {
+        "index": 5942971,
+        "image_name": "196/0007495391.jpg",
+        "distance": 0.7798920273780823
+      },
+      {
+        "index": 18387400,
+        "image_name": "515/0055960365.jpg",
+        "distance": 0.7799129486083984
+      },
+      {
+        "index": 7145424,
+        "image_name": "223/0008773796.jpg",
+        "distance": 0.7801723480224609
+      },
+      {
+        "index": 5571580,
+        "image_name": "181/0006953287.jpg",
+        "distance": 0.7802678942680359
+      },
+      {
+        "index": 491220,
+        "image_name": "036/0001098239.jpg",
+        "distance": 0.7810661792755127
+      },
+      {
+        "index": 8139661,
+        "image_name": "248/0009841419.jpg",
+        "distance": 0.7814507484436035
+      },
+      {
+        "index": 10665057,
+        "image_name": "308/0012639297.jpg",
+        "distance": 0.7816760540008545
+      },
+      {
+        "index": 6856136,
+        "image_name": "216/0008423166.jpg",
+        "distance": 0.7817414999008179
+      },
+      {
+        "index": 5058777,
+        "image_name": "167/0006391165.jpg",
+        "distance": 0.782069206237793
+      },
+      {
+        "index": 857428,
+        "image_name": "051/0001695554.jpg",
+        "distance": 0.7821831703186035
+      },
+      {
+        "index": 4402022,
+        "image_name": "151/0005677589.jpg",
+        "distance": 0.7823145985603333
+      },
+      {
+        "index": 6218213,
+        "image_name": "202/0007755581.jpg",
+        "distance": 0.7823728322982788
+      },
+      {
+        "index": 16955645,
+        "image_name": "465/0048214466.jpg",
+        "distance": 0.7824547290802002
+      },
+      {
+        "index": 492744,
+        "image_name": "036/0001098786.jpg",
+        "distance": 0.7824773192405701
+      },
+      {
+        "index": 1462169,
+        "image_name": "073/0002420141.jpg",
+        "distance": 0.7826064229011536
+      },
+      {
+        "index": 306130,
+        "image_name": "032/0000946285.jpg",
+        "distance": 0.7826541662216187
+      },
+      {
+        "index": 19226643,
+        "image_name": "554/0071503486.jpg",
+        "distance": 0.7828482389450073
+      },
+      {
+        "index": 16749478,
+        "image_name": "461/0019851612.jpg",
+        "distance": 0.7828622460365295
+      },
+      {
+        "index": 19181919,
+        "image_name": "553/0041345576.jpg",
+        "distance": 0.782883882522583
+      },
+      {
+        "index": 580841,
+        "image_name": "038/0001206292.jpg",
+        "distance": 0.7830201387405396
+      },
+      {
+        "index": 947844,
+        "image_name": "053/0001776796.jpg",
+        "distance": 0.7832005023956299
+      },
+      {
+        "index": 10318898,
+        "image_name": "300/0012265910.jpg",
+        "distance": 0.783467710018158
+      },
+      {
+        "index": 458568,
+        "image_name": "035/0001073347.jpg",
+        "distance": 0.7836868762969971
+      },
+      {
+        "index": 8588556,
+        "image_name": "258/0010310265.jpg",
+        "distance": 0.7837821245193481
+      },
+      {
+        "index": 570980,
+        "image_name": "038/0001211784.jpg",
+        "distance": 0.783821702003479
+      },
+      {
+        "index": 10318749,
+        "image_name": "300/0012264803.jpg",
+        "distance": 0.7838706970214844
+      },
+      {
+        "index": 492206,
+        "image_name": "036/0001098790.jpg",
+        "distance": 0.7838854789733887
+      },
+      {
+        "index": 485203,
+        "image_name": "036/0001108072.jpg",
+        "distance": 0.7838876247406006
+      },
+      {
+        "index": 11684400,
+        "image_name": "341/0014209119.jpg",
+        "distance": 0.7840343713760376
+      },
+      {
+        "index": 8248365,
+        "image_name": "250/0009947590.jpg",
+        "distance": 0.784149169921875
+      },
+      {
+        "index": 17819892,
+        "image_name": "501/0054213592.jpg",
+        "distance": 0.7843316793441772
+      },
+      {
+        "index": 12848464,
+        "image_name": "371/0034379379.jpg",
+        "distance": 0.7844809293746948
+      },
+      {
+        "index": 6750144,
+        "image_name": "214/0008348950.jpg",
+        "distance": 0.7845331430435181
+      },
+      {
+        "index": 942566,
+        "image_name": "053/0001780996.jpg",
+        "distance": 0.784599781036377
+      },
+      {
+        "index": 18095501,
+        "image_name": "507/0053309998.jpg",
+        "distance": 0.7847923636436462
+      },
+      {
+        "index": 2953314,
+        "image_name": "117/0004165114.jpg",
+        "distance": 0.7849980592727661
+      },
+      {
+        "index": 19451182,
+        "image_name": "559/0077209381.jpg",
+        "distance": 0.7849993705749512
+      },
+      {
+        "index": 569429,
+        "image_name": "038/0001204756.jpg",
+        "distance": 0.7850074172019958
+      },
+      {
+        "index": 7044566,
+        "image_name": "221/0008687090.jpg",
+        "distance": 0.7850257158279419
+      },
+      {
+        "index": 7344896,
+        "image_name": "228/0008948611.jpg",
+        "distance": 0.7852618098258972
+      },
+      {
+        "index": 13174768,
+        "image_name": "378/0034737906.jpg",
+        "distance": 0.7853710651397705
+      },
+      {
+        "index": 10378408,
+        "image_name": "301/0012271219.jpg",
+        "distance": 0.7853882312774658
+      },
+      {
+        "index": 49415,
+        "image_name": "006/0000132278.jpg",
+        "distance": 0.7855097651481628
+      },
+      {
+        "index": 11418229,
+        "image_name": "326/0013494961.jpg",
+        "distance": 0.7855603098869324
+      },
+      {
+        "index": 7381992,
+        "image_name": "229/0009032416.jpg",
+        "distance": 0.7857582569122314
+      },
+      {
+        "index": 12608933,
+        "image_name": "366/0034113665.jpg",
+        "distance": 0.7857964634895325
+      },
+      {
+        "index": 7160296,
+        "image_name": "223/0008760933.jpg",
+        "distance": 0.785999596118927
+      },
+      {
+        "index": 974785,
+        "image_name": "054/0001849583.jpg",
+        "distance": 0.7860031127929688
+      },
+      {
+        "index": 16122768,
+        "image_name": "447/0050649724.jpg",
+        "distance": 0.786122739315033
+      },
+      {
+        "index": 7414148,
+        "image_name": "230/0009060142.jpg",
+        "distance": 0.7861314415931702
+      },
+      {
+        "index": 1111930,
+        "image_name": "058/0001984890.jpg",
+        "distance": 0.7861855626106262
+      },
+      {
+        "index": 1390393,
+        "image_name": "071/0002351371.jpg",
+        "distance": 0.7863439321517944
+      },
+      {
+        "index": 19048643,
+        "image_name": "535/0070870919.jpg",
+        "distance": 0.7863496541976929
+      },
+      {
+        "index": 5475557,
+        "image_name": "178/0006846932.jpg",
+        "distance": 0.7864177823066711
+      },
+      {
+        "index": 6827680,
+        "image_name": "216/0008427678.jpg",
+        "distance": 0.7865281105041504
+      },
+      {
+        "index": 2664348,
+        "image_name": "106/0003742599.jpg",
+        "distance": 0.7866069674491882
+      },
+      {
+        "index": 3352365,
+        "image_name": "126/0004561470.jpg",
+        "distance": 0.7866127490997314
+      },
+      {
+        "index": 2751396,
+        "image_name": "110/0003923041.jpg",
+        "distance": 0.7867158651351929
+      },
+      {
+        "index": 5019167,
+        "image_name": "166/0006371735.jpg",
+        "distance": 0.7867850065231323
+      },
+      {
+        "index": 11397591,
+        "image_name": "326/0013484732.jpg",
+        "distance": 0.7868242263793945
+      },
+      {
+        "index": 459108,
+        "image_name": "035/0001073340.jpg",
+        "distance": 0.7868400812149048
+      },
+      {
+        "index": 3347726,
+        "image_name": "126/0004563956.jpg",
+        "distance": 0.7868768572807312
+      },
+      {
+        "index": 16097281,
+        "image_name": "447/0050649718.jpg",
+        "distance": 0.7868992686271667
+      },
+      {
+        "index": 393283,
+        "image_name": "034/0001030107.jpg",
+        "distance": 0.7869482636451721
+      },
+      {
+        "index": 304230,
+        "image_name": "032/0000952672.jpg",
+        "distance": 0.7869625687599182
+      },
+      {
+        "index": 3773969,
+        "image_name": "136/0005035012.jpg",
+        "distance": 0.7869681715965271
+      },
+      {
+        "index": 930712,
+        "image_name": "053/0001796273.jpg",
+        "distance": 0.7869808077812195
+      },
+      {
+        "index": 18721614,
+        "image_name": "529/0070398862.jpg",
+        "distance": 0.7870314717292786
+      },
+      {
+        "index": 480339,
+        "image_name": "036/0001088828.jpg",
+        "distance": 0.7870928645133972
+      },
+      {
+        "index": 82553,
+        "image_name": "012/0000275448.jpg",
+        "distance": 0.7871143221855164
+      },
+      {
+        "index": 19190465,
+        "image_name": "553/0041345577.jpg",
+        "distance": 0.7871654033660889
+      },
+      {
+        "index": 14626338,
+        "image_name": "415/0048785785.jpg",
+        "distance": 0.7872403860092163
+      },
+      {
+        "index": 12815397,
+        "image_name": "371/0034382788.jpg",
+        "distance": 0.7873220443725586
+      },
+      {
+        "index": 508289,
+        "image_name": "036/0001089587.jpg",
+        "distance": 0.7873938083648682
+      },
+      {
+        "index": 855626,
+        "image_name": "051/0001717458.jpg",
+        "distance": 0.7874196171760559
+      },
+      {
+        "index": 15596555,
+        "image_name": "436/0049870154.jpg",
+        "distance": 0.787424623966217
+      },
+      {
+        "index": 6000028,
+        "image_name": "197/0007514512.jpg",
+        "distance": 0.7875988483428955
+      },
+      {
+        "index": 947892,
+        "image_name": "053/0001776798.jpg",
+        "distance": 0.787682294845581
+      }
+    ]
+  },
+  {
+    "query_session_id": "3bc2c682-d18b-482b-ae2f-c0e14e938c74",
+    "feedback_search_id": "5daffc8c-bef7-4888-be2d-5068a348ed43",
+    "timestamp": "2026-05-31T15:06:24.718598",
+    "query_type": "text",
+    "query_text": "perfect evening",
+    "query_image_index": null,
+    "query_ranking_time_ms": 128314.0,
+    "model": "MLOML",
+    "feedback_type": 3,
+    "feedback_type_name": "All Possible Pairs",
+    "model_params": {
+      "n_layers": 2,
+      "gamma": 0.0004,
+      "activation": "tanh",
+      "lambda_reg": 7e-06
+    },
+    "feedback_params": {},
+    "scaling_factor": 1.0127857810873748,
+    "distance_mode": "dot_product",
+    "distance_metric": "mahalanobis",
+    "base_metric": "cosine",
+    "search_pipeline": "filter+refine",
+    "num_results_total": 100,
+    "num_results_logged": 100,
+    "results": [
+      {
+        "index": 19415065,
+        "image_name": "558/0077109556.jpg",
+        "distance": 1.230222062249119
+      },
+      {
+        "index": 11682459,
+        "image_name": "341/0014208035.jpg",
+        "distance": 1.2304820169621222
+      },
+      {
+        "index": 17942675,
+        "image_name": "503/0054302992.jpg",
+        "distance": 1.232667977086494
+      },
+      {
+        "index": 6009573,
+        "image_name": "197/0007515573.jpg",
+        "distance": 1.2339669519819538
+      },
+      {
+        "index": 18820539,
+        "image_name": "531/0070704427.jpg",
+        "distance": 1.234094144866994
+      },
+      {
+        "index": 1291695,
+        "image_name": "069/0002256860.jpg",
+        "distance": 1.2341863479732602
+      },
+      {
+        "index": 9859944,
+        "image_name": "289/0011745617.jpg",
+        "distance": 1.2349594220841467
+      },
+      {
+        "index": 495495,
+        "image_name": "036/0001098789.jpg",
+        "distance": 1.2355318466942509
+      },
+      {
+        "index": 16690568,
+        "image_name": "460/0016450824.jpg",
+        "distance": 1.2361147278970503
+      },
+      {
+        "index": 6176474,
+        "image_name": "201/0007736544.jpg",
+        "distance": 1.236451715774707
+      },
+      {
+        "index": 17820128,
+        "image_name": "501/0054207026.jpg",
+        "distance": 1.2382512388960376
+      },
+      {
+        "index": 9039977,
+        "image_name": "271/0010873820.jpg",
+        "distance": 1.2383170055739103
+      },
+      {
+        "index": 17819892,
+        "image_name": "501/0054213592.jpg",
+        "distance": 1.2392393645623045
+      },
+      {
+        "index": 5058777,
+        "image_name": "167/0006391165.jpg",
+        "distance": 1.2407398562267866
+      },
+      {
+        "index": 1834464,
+        "image_name": "084/0002870113.jpg",
+        "distance": 1.2421287002402597
+      },
+      {
+        "index": 18853857,
+        "image_name": "531/0070704918.jpg",
+        "distance": 1.242292628935136
+      },
+      {
+        "index": 6000028,
+        "image_name": "197/0007514512.jpg",
+        "distance": 1.2430846154707522
+      },
+      {
+        "index": 18721614,
+        "image_name": "529/0070398862.jpg",
+        "distance": 1.2436448266747662
+      },
+      {
+        "index": 8139661,
+        "image_name": "248/0009841419.jpg",
+        "distance": 1.2437079070147814
+      },
+      {
+        "index": 17955685,
+        "image_name": "503/0054302991.jpg",
+        "distance": 1.243834073806257
+      },
+      {
+        "index": 7344896,
+        "image_name": "228/0008948611.jpg",
+        "distance": 1.2441004040777908
+      },
+      {
+        "index": 974785,
+        "image_name": "054/0001849583.jpg",
+        "distance": 1.2443914151141784
+      },
+      {
+        "index": 10665057,
+        "image_name": "308/0012639297.jpg",
+        "distance": 1.2447565912647685
+      },
+      {
+        "index": 1106309,
+        "image_name": "057/0001980075.jpg",
+        "distance": 1.2450807690474348
+      },
+      {
+        "index": 3352365,
+        "image_name": "126/0004561470.jpg",
+        "distance": 1.2451598483705264
+      },
+      {
+        "index": 9690181,
+        "image_name": "285/0011553755.jpg",
+        "distance": 1.245194518159192
+      },
+      {
+        "index": 6856136,
+        "image_name": "216/0008423166.jpg",
+        "distance": 1.2452559855219154
+      },
+      {
+        "index": 17989992,
+        "image_name": "504/0054371306.jpg",
+        "distance": 1.2452864716338539
+      },
+      {
+        "index": 492744,
+        "image_name": "036/0001098786.jpg",
+        "distance": 1.2453050156305026
+      },
+      {
+        "index": 13376364,
+        "image_name": "382/0035016342.jpg",
+        "distance": 1.2453743339727867
+      },
+      {
+        "index": 12848464,
+        "image_name": "371/0034379379.jpg",
+        "distance": 1.2456125352386016
+      },
+      {
+        "index": 19451182,
+        "image_name": "559/0077209381.jpg",
+        "distance": 1.2456167546620112
+      },
+      {
+        "index": 18844882,
+        "image_name": "531/0070677850.jpg",
+        "distance": 1.2456952889288084
+      },
+      {
+        "index": 2953314,
+        "image_name": "117/0004165114.jpg",
+        "distance": 1.2457250963246718
+      },
+      {
+        "index": 16749478,
+        "image_name": "461/0019851612.jpg",
+        "distance": 1.245865437209531
+      },
+      {
+        "index": 10318898,
+        "image_name": "300/0012265910.jpg",
+        "distance": 1.245912440526134
+      },
+      {
+        "index": 10378408,
+        "image_name": "301/0012271219.jpg",
+        "distance": 1.2461750510575447
+      },
+      {
+        "index": 2739559,
+        "image_name": "110/0003936108.jpg",
+        "distance": 1.2462013454832528
+      },
+      {
+        "index": 492206,
+        "image_name": "036/0001098790.jpg",
+        "distance": 1.2464171213021265
+      },
+      {
+        "index": 6218213,
+        "image_name": "202/0007755581.jpg",
+        "distance": 1.2465595136739644
+      },
+      {
+        "index": 18387400,
+        "image_name": "515/0055960365.jpg",
+        "distance": 1.246806478328392
+      },
+      {
+        "index": 1462169,
+        "image_name": "073/0002420141.jpg",
+        "distance": 1.246813428456064
+      },
+      {
+        "index": 4815982,
+        "image_name": "161/0006137464.jpg",
+        "distance": 1.24695232666375
+      },
+      {
+        "index": 5942971,
+        "image_name": "196/0007495391.jpg",
+        "distance": 1.2469793633710908
+      },
+      {
+        "index": 19023665,
+        "image_name": "535/0070885343.jpg",
+        "distance": 1.2471614200650247
+      },
+      {
+        "index": 8220823,
+        "image_name": "250/0009939184.jpg",
+        "distance": 1.247238885103482
+      },
+      {
+        "index": 1085235,
+        "image_name": "057/0001947658.jpg",
+        "distance": 1.2473007128544702
+      },
+      {
+        "index": 2863813,
+        "image_name": "114/0004048229.jpg",
+        "distance": 1.2474743383887499
+      },
+      {
+        "index": 11418229,
+        "image_name": "326/0013494961.jpg",
+        "distance": 1.2475958873616921
+      },
+      {
+        "index": 8837170,
+        "image_name": "265/0010622600.jpg",
+        "distance": 1.2478652190510309
+      },
+      {
+        "index": 458568,
+        "image_name": "035/0001073347.jpg",
+        "distance": 1.2478847163332982
+      },
+      {
+        "index": 306130,
+        "image_name": "032/0000946285.jpg",
+        "distance": 1.247955170143164
+      },
+      {
+        "index": 3631849,
+        "image_name": "132/0004859100.jpg",
+        "distance": 1.247962054713261
+      },
+      {
+        "index": 5571580,
+        "image_name": "181/0006953287.jpg",
+        "distance": 1.2480270193811278
+      },
+      {
+        "index": 19151745,
+        "image_name": "552/0056799533.jpg",
+        "distance": 1.2481278735322834
+      },
+      {
+        "index": 9752818,
+        "image_name": "286/0011585382.jpg",
+        "distance": 1.2483437219470235
+      },
+      {
+        "index": 6750144,
+        "image_name": "214/0008348950.jpg",
+        "distance": 1.2484846473171716
+      },
+      {
+        "index": 17973755,
+        "image_name": "504/0054326751.jpg",
+        "distance": 1.2485001241848144
+      },
+      {
+        "index": 10326553,
+        "image_name": "300/0012265636.jpg",
+        "distance": 1.2486149579738943
+      },
+      {
+        "index": 1116811,
+        "image_name": "058/0002028472.jpg",
+        "distance": 1.2486345794564864
+      },
+      {
+        "index": 17954466,
+        "image_name": "503/0054322751.jpg",
+        "distance": 1.2486477580740953
+      },
+      {
+        "index": 7145424,
+        "image_name": "223/0008773796.jpg",
+        "distance": 1.248849323699364
+      },
+      {
+        "index": 2751396,
+        "image_name": "110/0003923041.jpg",
+        "distance": 1.2488891951770833
+      },
+      {
+        "index": 10318749,
+        "image_name": "300/0012264803.jpg",
+        "distance": 1.2493278500071738
+      },
+      {
+        "index": 930712,
+        "image_name": "053/0001796273.jpg",
+        "distance": 1.2493556741958414
+      },
+      {
+        "index": 485203,
+        "image_name": "036/0001108072.jpg",
+        "distance": 1.2493720052322606
+      },
+      {
+        "index": 269757,
+        "image_name": "031/0000896794.jpg",
+        "distance": 1.2493891008318616
+      },
+      {
+        "index": 17970050,
+        "image_name": "504/0054329242.jpg",
+        "distance": 1.2494898682262774
+      },
+      {
+        "index": 9783644,
+        "image_name": "287/0011651096.jpg",
+        "distance": 1.2495946137426683
+      },
+      {
+        "index": 15266655,
+        "image_name": "430/0049553931.jpg",
+        "distance": 1.2496783248985857
+      },
+      {
+        "index": 19048643,
+        "image_name": "535/0070870919.jpg",
+        "distance": 1.249745525943556
+      },
+      {
+        "index": 491220,
+        "image_name": "036/0001098239.jpg",
+        "distance": 1.2497835600451654
+      },
+      {
+        "index": 18738453,
+        "image_name": "529/0070398860.jpg",
+        "distance": 1.24980381631969
+      },
+      {
+        "index": 11684400,
+        "image_name": "341/0014209119.jpg",
+        "distance": 1.2499052283517313
+      },
+      {
+        "index": 1294257,
+        "image_name": "069/0002256859.jpg",
+        "distance": 1.2499070152040785
+      },
+      {
+        "index": 6856737,
+        "image_name": "216/0008444002.jpg",
+        "distance": 1.2499811025433927
+      },
+      {
+        "index": 5756908,
+        "image_name": "186/0007146152.jpg",
+        "distance": 1.2502846442810625
+      },
+      {
+        "index": 1396133,
+        "image_name": "072/0002386964.jpg",
+        "distance": 1.2503610437385206
+      },
+      {
+        "index": 13174768,
+        "image_name": "378/0034737906.jpg",
+        "distance": 1.2503802624440628
+      },
+      {
+        "index": 3146771,
+        "image_name": "121/0004350424.jpg",
+        "distance": 1.2504823725512226
+      },
+      {
+        "index": 480339,
+        "image_name": "036/0001088828.jpg",
+        "distance": 1.2505539158062824
+      },
+      {
+        "index": 8248365,
+        "image_name": "250/0009947590.jpg",
+        "distance": 1.2505888252556463
+      },
+      {
+        "index": 1466026,
+        "image_name": "073/0002420140.jpg",
+        "distance": 1.2506584289484368
+      },
+      {
+        "index": 17772367,
+        "image_name": "500/0054160267.jpg",
+        "distance": 1.2508398480233378
+      },
+      {
+        "index": 4009677,
+        "image_name": "142/0005285140.jpg",
+        "distance": 1.2508723343974513
+      },
+      {
+        "index": 16960822,
+        "image_name": "465/0048253872.jpg",
+        "distance": 1.2508746868729292
+      },
+      {
+        "index": 17853271,
+        "image_name": "501/0054206941.jpg",
+        "distance": 1.2510336249666065
+      },
+      {
+        "index": 16122768,
+        "image_name": "447/0050649724.jpg",
+        "distance": 1.251183050656429
+      },
+      {
+        "index": 16414967,
+        "image_name": "453/0050932900.jpg",
+        "distance": 1.2511960425478756
+      },
+      {
+        "index": 12815397,
+        "image_name": "371/0034382788.jpg",
+        "distance": 1.251245494795563
+      },
+      {
+        "index": 3174384,
+        "image_name": "122/0004373181.jpg",
+        "distance": 1.251307128630795
+      },
+      {
+        "index": 12410530,
+        "image_name": "361/0033860390.jpg",
+        "distance": 1.2513292079186242
+      },
+      {
+        "index": 11397591,
+        "image_name": "326/0013484732.jpg",
+        "distance": 1.2516618206169656
+      },
+      {
+        "index": 11677,
+        "image_name": "002/0000041061.jpg",
+        "distance": 1.2517338686111423
+      },
+      {
+        "index": 5475557,
+        "image_name": "178/0006846932.jpg",
+        "distance": 1.251890620274674
+      },
+      {
+        "index": 4896002,
+        "image_name": "163/0006212019.jpg",
+        "distance": 1.251890911465683
+      },
+      {
+        "index": 19317255,
+        "image_name": "556/0076812221.jpg",
+        "distance": 1.251926457100514
+      },
+      {
+        "index": 1990959,
+        "image_name": "090/0003072315.jpg",
+        "distance": 1.2519619473881571
+      },
+      {
+        "index": 18363227,
+        "image_name": "515/0055960408.jpg",
+        "distance": 1.2520262759782064
+      },
+      {
+        "index": 18095501,
+        "image_name": "507/0053309998.jpg",
+        "distance": 1.2522129934376767
+      }
+    ]
+  },
+  {
+    "query_session_id": "3bc2c682-d18b-482b-ae2f-c0e14e938c74",
+    "feedback_search_id": "1ad90268-316b-43bc-83fe-4d65be182ec9",
+    "timestamp": "2026-05-31T15:08:38.603098",
+    "query_type": "text",
+    "query_text": "perfect evening",
+    "query_image_index": null,
+    "query_ranking_time_ms": 54782.0,
+    "model": "MLOML",
+    "feedback_type": 3,
+    "feedback_type_name": "All Possible Pairs",
+    "model_params": {
+      "n_layers": 2,
+      "gamma": 0.0004,
+      "activation": "tanh",
+      "lambda_reg": 7e-06
+    },
+    "feedback_params": {},
+    "scaling_factor": 1.02410406638521,
+    "distance_mode": "dot_product",
+    "distance_metric": "mahalanobis",
+    "base_metric": "cosine",
+    "search_pipeline": "filter+refine",
+    "num_results_total": 100,
+    "num_results_logged": 100,
+    "results": [
+      {
+        "index": 19415065,
+        "image_name": "558/0077109556.jpg",
+        "distance": 1.2238088465479497
+      },
+      {
+        "index": 17942675,
+        "image_name": "503/0054302992.jpg",
+        "distance": 1.225391131899799
+      },
+      {
+        "index": 6009573,
+        "image_name": "197/0007515573.jpg",
+        "distance": 1.2278379955809016
+      },
+      {
+        "index": 495495,
+        "image_name": "036/0001098789.jpg",
+        "distance": 1.2283968761350377
+      },
+      {
+        "index": 18820539,
+        "image_name": "531/0070704427.jpg",
+        "distance": 1.2284773009005772
+      },
+      {
+        "index": 6176474,
+        "image_name": "201/0007736544.jpg",
+        "distance": 1.228619384637096
+      },
+      {
+        "index": 1291695,
+        "image_name": "069/0002256860.jpg",
+        "distance": 1.2291789275898894
+      },
+      {
+        "index": 17820128,
+        "image_name": "501/0054207026.jpg",
+        "distance": 1.230938199861578
+      },
+      {
+        "index": 17819892,
+        "image_name": "501/0054213592.jpg",
+        "distance": 1.2309633631861447
+      },
+      {
+        "index": 11682459,
+        "image_name": "341/0014208035.jpg",
+        "distance": 1.2330180348337192
+      },
+      {
+        "index": 5058777,
+        "image_name": "167/0006391165.jpg",
+        "distance": 1.2344050186346316
+      },
+      {
+        "index": 6000028,
+        "image_name": "197/0007514512.jpg",
+        "distance": 1.2361055208548863
+      },
+      {
+        "index": 17955685,
+        "image_name": "503/0054302991.jpg",
+        "distance": 1.2366342763444802
+      },
+      {
+        "index": 18853857,
+        "image_name": "531/0070704918.jpg",
+        "distance": 1.237255720255271
+      },
+      {
+        "index": 974785,
+        "image_name": "054/0001849583.jpg",
+        "distance": 1.237425599762755
+      },
+      {
+        "index": 18721614,
+        "image_name": "529/0070398862.jpg",
+        "distance": 1.2376868007343518
+      },
+      {
+        "index": 8139661,
+        "image_name": "248/0009841419.jpg",
+        "distance": 1.2376942210196349
+      },
+      {
+        "index": 16690568,
+        "image_name": "460/0016450824.jpg",
+        "distance": 1.2380939262352648
+      },
+      {
+        "index": 9859944,
+        "image_name": "289/0011745617.jpg",
+        "distance": 1.2385369296589628
+      },
+      {
+        "index": 492744,
+        "image_name": "036/0001098786.jpg",
+        "distance": 1.2390994269505993
+      },
+      {
+        "index": 492206,
+        "image_name": "036/0001098790.jpg",
+        "distance": 1.239243779806305
+      },
+      {
+        "index": 19451182,
+        "image_name": "559/0077209381.jpg",
+        "distance": 1.2393749965404053
+      },
+      {
+        "index": 9039977,
+        "image_name": "271/0010873820.jpg",
+        "distance": 1.2400956585259277
+      },
+      {
+        "index": 1462169,
+        "image_name": "073/0002420141.jpg",
+        "distance": 1.2403197005839288
+      },
+      {
+        "index": 12848464,
+        "image_name": "371/0034379379.jpg",
+        "distance": 1.240757468174943
+      },
+      {
+        "index": 10665057,
+        "image_name": "308/0012639297.jpg",
+        "distance": 1.2408114721512449
+      },
+      {
+        "index": 10318898,
+        "image_name": "300/0012265910.jpg",
+        "distance": 1.241217266196787
+      },
+      {
+        "index": 3631849,
+        "image_name": "132/0004859100.jpg",
+        "distance": 1.2412349535552005
+      },
+      {
+        "index": 10378408,
+        "image_name": "301/0012271219.jpg",
+        "distance": 1.2413663971837305
+      },
+      {
+        "index": 1085235,
+        "image_name": "057/0001947658.jpg",
+        "distance": 1.241664321677436
+      },
+      {
+        "index": 19023665,
+        "image_name": "535/0070885343.jpg",
+        "distance": 1.2416759078705257
+      },
+      {
+        "index": 18844882,
+        "image_name": "531/0070677850.jpg",
+        "distance": 1.2417752171287106
+      },
+      {
+        "index": 4815982,
+        "image_name": "161/0006137464.jpg",
+        "distance": 1.2418617877550626
+      },
+      {
+        "index": 2953314,
+        "image_name": "117/0004165114.jpg",
+        "distance": 1.241880846145579
+      },
+      {
+        "index": 17954466,
+        "image_name": "503/0054322751.jpg",
+        "distance": 1.241904681498569
+      },
+      {
+        "index": 9752818,
+        "image_name": "286/0011585382.jpg",
+        "distance": 1.241934878501547
+      },
+      {
+        "index": 7344896,
+        "image_name": "228/0008948611.jpg",
+        "distance": 1.2424767099097456
+      },
+      {
+        "index": 17970050,
+        "image_name": "504/0054329242.jpg",
+        "distance": 1.2424788764239945
+      },
+      {
+        "index": 9783644,
+        "image_name": "287/0011651096.jpg",
+        "distance": 1.2426240183383674
+      },
+      {
+        "index": 1834464,
+        "image_name": "084/0002870113.jpg",
+        "distance": 1.2428431102373385
+      },
+      {
+        "index": 485203,
+        "image_name": "036/0001108072.jpg",
+        "distance": 1.2428656804405382
+      },
+      {
+        "index": 1116811,
+        "image_name": "058/0002028472.jpg",
+        "distance": 1.2432809605338797
+      },
+      {
+        "index": 17853271,
+        "image_name": "501/0054206941.jpg",
+        "distance": 1.2432893447670685
+      },
+      {
+        "index": 18738453,
+        "image_name": "529/0070398860.jpg",
+        "distance": 1.2434848188418868
+      },
+      {
+        "index": 17772367,
+        "image_name": "500/0054160267.jpg",
+        "distance": 1.2436423765500584
+      },
+      {
+        "index": 1466026,
+        "image_name": "073/0002420140.jpg",
+        "distance": 1.243817707444986
+      },
+      {
+        "index": 1294257,
+        "image_name": "069/0002256859.jpg",
+        "distance": 1.2438667527114848
+      },
+      {
+        "index": 3146771,
+        "image_name": "121/0004350424.jpg",
+        "distance": 1.2439046167998316
+      },
+      {
+        "index": 18843519,
+        "image_name": "531/0070704606.jpg",
+        "distance": 1.2439783938541762
+      },
+      {
+        "index": 17989992,
+        "image_name": "504/0054371306.jpg",
+        "distance": 1.2439877289724068
+      },
+      {
+        "index": 1396133,
+        "image_name": "072/0002386964.jpg",
+        "distance": 1.2440162371171508
+      },
+      {
+        "index": 18387400,
+        "image_name": "515/0055960365.jpg",
+        "distance": 1.2448017629530264
+      },
+      {
+        "index": 1990959,
+        "image_name": "090/0003072315.jpg",
+        "distance": 1.2448439915985587
+      },
+      {
+        "index": 10318749,
+        "image_name": "300/0012264803.jpg",
+        "distance": 1.2448836532953833
+      },
+      {
+        "index": 6218213,
+        "image_name": "202/0007755581.jpg",
+        "distance": 1.2449433884044014
+      },
+      {
+        "index": 6856136,
+        "image_name": "216/0008423166.jpg",
+        "distance": 1.2450737226232718
+      },
+      {
+        "index": 11418229,
+        "image_name": "326/0013494961.jpg",
+        "distance": 1.245121653406789
+      },
+      {
+        "index": 5942971,
+        "image_name": "196/0007495391.jpg",
+        "distance": 1.2451561796666548
+      },
+      {
+        "index": 306130,
+        "image_name": "032/0000946285.jpg",
+        "distance": 1.2451866192479624
+      },
+      {
+        "index": 6856737,
+        "image_name": "216/0008444002.jpg",
+        "distance": 1.245306682357462
+      },
+      {
+        "index": 17964602,
+        "image_name": "504/0054350138.jpg",
+        "distance": 1.2454256436038382
+      },
+      {
+        "index": 9690181,
+        "image_name": "285/0011553755.jpg",
+        "distance": 1.245629428974356
+      },
+      {
+        "index": 19317255,
+        "image_name": "556/0076812221.jpg",
+        "distance": 1.2456792835848705
+      },
+      {
+        "index": 13376364,
+        "image_name": "382/0035016342.jpg",
+        "distance": 1.245814482669756
+      },
+      {
+        "index": 17804963,
+        "image_name": "500/0054137573.jpg",
+        "distance": 1.2458844634775033
+      },
+      {
+        "index": 16749478,
+        "image_name": "461/0019851612.jpg",
+        "distance": 1.2459144302552387
+      },
+      {
+        "index": 2739559,
+        "image_name": "110/0003936108.jpg",
+        "distance": 1.2461670550697388
+      },
+      {
+        "index": 12815397,
+        "image_name": "371/0034382788.jpg",
+        "distance": 1.2462048793736022
+      },
+      {
+        "index": 11684400,
+        "image_name": "341/0014209119.jpg",
+        "distance": 1.2462385778831726
+      },
+      {
+        "index": 1106309,
+        "image_name": "057/0001980075.jpg",
+        "distance": 1.2462391610611414
+      },
+      {
+        "index": 609555,
+        "image_name": "039/0001247986.jpg",
+        "distance": 1.2462758786969823
+      },
+      {
+        "index": 3174384,
+        "image_name": "122/0004373181.jpg",
+        "distance": 1.2464739490215946
+      },
+      {
+        "index": 2863813,
+        "image_name": "114/0004048229.jpg",
+        "distance": 1.24659811212191
+      },
+      {
+        "index": 17946981,
+        "image_name": "503/0054295426.jpg",
+        "distance": 1.2466159714255391
+      },
+      {
+        "index": 3352365,
+        "image_name": "126/0004561470.jpg",
+        "distance": 1.2466332397393818
+      },
+      {
+        "index": 16414967,
+        "image_name": "453/0050932900.jpg",
+        "distance": 1.2467370341220418
+      },
+      {
+        "index": 2751396,
+        "image_name": "110/0003923041.jpg",
+        "distance": 1.2467778588406087
+      },
+      {
+        "index": 12418432,
+        "image_name": "361/0033873785.jpg",
+        "distance": 1.2470395059600696
+      },
+      {
+        "index": 13336284,
+        "image_name": "382/0035006827.jpg",
+        "distance": 1.247068682373738
+      },
+      {
+        "index": 11804519,
+        "image_name": "344/0014373595.jpg",
+        "distance": 1.247182468798038
+      },
+      {
+        "index": 7264479,
+        "image_name": "225/0008896098.jpg",
+        "distance": 1.2474071109883602
+      },
+      {
+        "index": 3306674,
+        "image_name": "125/0004543474.jpg",
+        "distance": 1.2474685547852307
+      },
+      {
+        "index": 19048643,
+        "image_name": "535/0070870919.jpg",
+        "distance": 1.2478753909273756
+      },
+      {
+        "index": 1430067,
+        "image_name": "073/0002420139.jpg",
+        "distance": 1.2480012271620047
+      },
+      {
+        "index": 3488776,
+        "image_name": "129/0004714078.jpg",
+        "distance": 1.2480814415523065
+      },
+      {
+        "index": 8220823,
+        "image_name": "250/0009939184.jpg",
+        "distance": 1.2481476572711958
+      },
+      {
+        "index": 17973755,
+        "image_name": "504/0054326751.jpg",
+        "distance": 1.2483258310830323
+      },
+      {
+        "index": 13174768,
+        "image_name": "378/0034737906.jpg",
+        "distance": 1.2484274036423504
+      },
+      {
+        "index": 8837170,
+        "image_name": "265/0010622600.jpg",
+        "distance": 1.2484822958568214
+      },
+      {
+        "index": 17746454,
+        "image_name": "499/0054085539.jpg",
+        "distance": 1.248544887941583
+      },
+      {
+        "index": 2752910,
+        "image_name": "110/0003911497.jpg",
+        "distance": 1.2486255316267147
+      },
+      {
+        "index": 3161791,
+        "image_name": "122/0004373173.jpg",
+        "distance": 1.248642529528529
+      },
+      {
+        "index": 458568,
+        "image_name": "035/0001073347.jpg",
+        "distance": 1.2486691071894285
+      },
+      {
+        "index": 11706588,
+        "image_name": "341/0014195593.jpg",
+        "distance": 1.2487021479006581
+      },
+      {
+        "index": 19151745,
+        "image_name": "552/0056799533.jpg",
+        "distance": 1.2487066891334975
+      },
+      {
+        "index": 15558879,
+        "image_name": "436/0049851727.jpg",
+        "distance": 1.2487389291537705
+      },
+      {
+        "index": 6750144,
+        "image_name": "214/0008348950.jpg",
+        "distance": 1.2487445479411767
+      },
+      {
+        "index": 490795,
+        "image_name": "036/0001098791.jpg",
+        "distance": 1.2487939617471726
+      },
+      {
+        "index": 15122043,
+        "image_name": "427/0049370632.jpg",
+        "distance": 1.24882859375981
+      },
+      {
+        "index": 5276127,
+        "image_name": "172/0006636104.jpg",
+        "distance": 1.2488341594689394
+      }
+    ]
+  },
+  {
+    "query_session_id": "3bc2c682-d18b-482b-ae2f-c0e14e938c74",
+    "feedback_search_id": "8bcf7f49-f4e6-469e-969a-e338b3839906",
+    "timestamp": "2026-05-31T15:09:39.511851",
+    "query_type": "text",
+    "query_text": "perfect evening",
+    "query_image_index": null,
+    "query_ranking_time_ms": 5750.0,
+    "model": "MLOML",
+    "feedback_type": 3,
+    "feedback_type_name": "All Possible Pairs",
+    "model_params": {
+      "n_layers": 2,
+      "gamma": 0.0004,
+      "activation": "tanh",
+      "lambda_reg": 7e-06
+    },
+    "feedback_params": {},
+    "scaling_factor": 1.0301158827563683,
+    "distance_mode": "dot_product",
+    "distance_metric": "mahalanobis",
+    "base_metric": "cosine",
+    "search_pipeline": "filter+refine",
+    "num_results_total": 100,
+    "num_results_logged": 100,
+    "results": [
+      {
+        "index": 19415065,
+        "image_name": "558/0077109556.jpg",
+        "distance": 1.2188797836909446
+      },
+      {
+        "index": 17942675,
+        "image_name": "503/0054302992.jpg",
+        "distance": 1.2206405243307763
+      },
+      {
+        "index": 6009573,
+        "image_name": "197/0007515573.jpg",
+        "distance": 1.223007672988598
+      },
+      {
+        "index": 6176474,
+        "image_name": "201/0007736544.jpg",
+        "distance": 1.2236214012826978
+      },
+      {
+        "index": 495495,
+        "image_name": "036/0001098789.jpg",
+        "distance": 1.2243423595019822
+      },
+      {
+        "index": 1291695,
+        "image_name": "069/0002256860.jpg",
+        "distance": 1.2251660996899187
+      },
+      {
+        "index": 17819892,
+        "image_name": "501/0054213592.jpg",
+        "distance": 1.2261200820225253
+      },
+      {
+        "index": 17820128,
+        "image_name": "501/0054207026.jpg",
+        "distance": 1.2263488613055502
+      },
+      {
+        "index": 5058777,
+        "image_name": "167/0006391165.jpg",
+        "distance": 1.2305120388163373
+      },
+      {
+        "index": 17955685,
+        "image_name": "503/0054302991.jpg",
+        "distance": 1.231664718567166
+      },
+      {
+        "index": 6000028,
+        "image_name": "197/0007514512.jpg",
+        "distance": 1.2318499569983739
+      },
+      {
+        "index": 18820539,
+        "image_name": "531/0070704427.jpg",
+        "distance": 1.2329206402919057
+      },
+      {
+        "index": 974785,
+        "image_name": "054/0001849583.jpg",
+        "distance": 1.2330740860719271
+      },
+      {
+        "index": 8139661,
+        "image_name": "248/0009841419.jpg",
+        "distance": 1.2338731727673657
+      },
+      {
+        "index": 11682459,
+        "image_name": "341/0014208035.jpg",
+        "distance": 1.2344131167136398
+      },
+      {
+        "index": 18721614,
+        "image_name": "529/0070398862.jpg",
+        "distance": 1.234633361657096
+      },
+      {
+        "index": 492206,
+        "image_name": "036/0001098790.jpg",
+        "distance": 1.2352044519947891
+      },
+      {
+        "index": 492744,
+        "image_name": "036/0001098786.jpg",
+        "distance": 1.2352102400436433
+      },
+      {
+        "index": 19451182,
+        "image_name": "559/0077209381.jpg",
+        "distance": 1.235263317529903
+      },
+      {
+        "index": 16690568,
+        "image_name": "460/0016450824.jpg",
+        "distance": 1.2361162721700727
+      },
+      {
+        "index": 1462169,
+        "image_name": "073/0002420141.jpg",
+        "distance": 1.236166264924806
+      },
+      {
+        "index": 9859944,
+        "image_name": "289/0011745617.jpg",
+        "distance": 1.2364469164516938
+      },
+      {
+        "index": 3631849,
+        "image_name": "132/0004859100.jpg",
+        "distance": 1.2371009275931977
+      },
+      {
+        "index": 10665057,
+        "image_name": "308/0012639297.jpg",
+        "distance": 1.237820507851189
+      },
+      {
+        "index": 1085235,
+        "image_name": "057/0001947658.jpg",
+        "distance": 1.2378359725577264
+      },
+      {
+        "index": 17954466,
+        "image_name": "503/0054322751.jpg",
+        "distance": 1.2378687320562545
+      },
+      {
+        "index": 12848464,
+        "image_name": "371/0034379379.jpg",
+        "distance": 1.2382473459379648
+      },
+      {
+        "index": 9783644,
+        "image_name": "287/0011651096.jpg",
+        "distance": 1.238323777741894
+      },
+      {
+        "index": 10318898,
+        "image_name": "300/0012265910.jpg",
+        "distance": 1.2383347106291578
+      },
+      {
+        "index": 9039977,
+        "image_name": "271/0010873820.jpg",
+        "distance": 1.2384173872739408
+      },
+      {
+        "index": 485203,
+        "image_name": "036/0001108072.jpg",
+        "distance": 1.238487002948645
+      },
+      {
+        "index": 10378408,
+        "image_name": "301/0012271219.jpg",
+        "distance": 1.2385295480875051
+      },
+      {
+        "index": 17970050,
+        "image_name": "504/0054329242.jpg",
+        "distance": 1.2385374501753352
+      },
+      {
+        "index": 9752818,
+        "image_name": "286/0011585382.jpg",
+        "distance": 1.2385788294538593
+      },
+      {
+        "index": 4815982,
+        "image_name": "161/0006137464.jpg",
+        "distance": 1.2385974814052094
+      },
+      {
+        "index": 17853271,
+        "image_name": "501/0054206941.jpg",
+        "distance": 1.2388017718242172
+      },
+      {
+        "index": 18844882,
+        "image_name": "531/0070677850.jpg",
+        "distance": 1.2390719449677636
+      },
+      {
+        "index": 19023665,
+        "image_name": "535/0070885343.jpg",
+        "distance": 1.2392008551684568
+      },
+      {
+        "index": 2953314,
+        "image_name": "117/0004165114.jpg",
+        "distance": 1.2393007153524076
+      },
+      {
+        "index": 1834464,
+        "image_name": "084/0002870113.jpg",
+        "distance": 1.2396099496290784
+      },
+      {
+        "index": 17772367,
+        "image_name": "500/0054160267.jpg",
+        "distance": 1.2396283902556935
+      },
+      {
+        "index": 3146771,
+        "image_name": "121/0004350424.jpg",
+        "distance": 1.239731166729032
+      },
+      {
+        "index": 1466026,
+        "image_name": "073/0002420140.jpg",
+        "distance": 1.239751485384563
+      },
+      {
+        "index": 1294257,
+        "image_name": "069/0002256859.jpg",
+        "distance": 1.2397520315564896
+      },
+      {
+        "index": 1116811,
+        "image_name": "058/0002028472.jpg",
+        "distance": 1.239941599310399
+      },
+      {
+        "index": 18738453,
+        "image_name": "529/0070398860.jpg",
+        "distance": 1.2406180656598556
+      },
+      {
+        "index": 1990959,
+        "image_name": "090/0003072315.jpg",
+        "distance": 1.2407033947307582
+      },
+      {
+        "index": 1396133,
+        "image_name": "072/0002386964.jpg",
+        "distance": 1.2409327138301423
+      },
+      {
+        "index": 17964602,
+        "image_name": "504/0054350138.jpg",
+        "distance": 1.2411664959567685
+      },
+      {
+        "index": 7344896,
+        "image_name": "228/0008948611.jpg",
+        "distance": 1.241546789399399
+      },
+      {
+        "index": 17989992,
+        "image_name": "504/0054371306.jpg",
+        "distance": 1.241676672506944
+      },
+      {
+        "index": 17946981,
+        "image_name": "503/0054295426.jpg",
+        "distance": 1.241759091103655
+      },
+      {
+        "index": 18387400,
+        "image_name": "515/0055960365.jpg",
+        "distance": 1.241937658035075
+      },
+      {
+        "index": 18853857,
+        "image_name": "531/0070704918.jpg",
+        "distance": 1.2419596038929719
+      },
+      {
+        "index": 10318749,
+        "image_name": "300/0012264803.jpg",
+        "distance": 1.2422990797752753
+      },
+      {
+        "index": 19317255,
+        "image_name": "556/0076812221.jpg",
+        "distance": 1.2423747875223292
+      },
+      {
+        "index": 6856737,
+        "image_name": "216/0008444002.jpg",
+        "distance": 1.242469352925939
+      },
+      {
+        "index": 17804963,
+        "image_name": "500/0054137573.jpg",
+        "distance": 1.2424988183337597
+      },
+      {
+        "index": 306130,
+        "image_name": "032/0000946285.jpg",
+        "distance": 1.2426367120481123
+      },
+      {
+        "index": 13376364,
+        "image_name": "382/0035016342.jpg",
+        "distance": 1.2427770166290657
+      },
+      {
+        "index": 609555,
+        "image_name": "039/0001247986.jpg",
+        "distance": 1.2428254273226098
+      },
+      {
+        "index": 11418229,
+        "image_name": "326/0013494961.jpg",
+        "distance": 1.2429471045826004
+      },
+      {
+        "index": 5942971,
+        "image_name": "196/0007495391.jpg",
+        "distance": 1.2430023564392405
+      },
+      {
+        "index": 6218213,
+        "image_name": "202/0007755581.jpg",
+        "distance": 1.2432863718103977
+      },
+      {
+        "index": 2739559,
+        "image_name": "110/0003936108.jpg",
+        "distance": 1.243287394913151
+      },
+      {
+        "index": 3174384,
+        "image_name": "122/0004373181.jpg",
+        "distance": 1.2433179837780572
+      },
+      {
+        "index": 7264479,
+        "image_name": "225/0008896098.jpg",
+        "distance": 1.2434308074641283
+      },
+      {
+        "index": 12815397,
+        "image_name": "371/0034382788.jpg",
+        "distance": 1.2434372144444876
+      },
+      {
+        "index": 11804519,
+        "image_name": "344/0014373595.jpg",
+        "distance": 1.2434415363584583
+      },
+      {
+        "index": 6856136,
+        "image_name": "216/0008423166.jpg",
+        "distance": 1.243444233107361
+      },
+      {
+        "index": 13336284,
+        "image_name": "382/0035006827.jpg",
+        "distance": 1.243459456457098
+      },
+      {
+        "index": 11684400,
+        "image_name": "341/0014209119.jpg",
+        "distance": 1.2435848549765631
+      },
+      {
+        "index": 1430067,
+        "image_name": "073/0002420139.jpg",
+        "distance": 1.2436258597946384
+      },
+      {
+        "index": 2863813,
+        "image_name": "114/0004048229.jpg",
+        "distance": 1.243884239548367
+      },
+      {
+        "index": 3306674,
+        "image_name": "125/0004543474.jpg",
+        "distance": 1.2439525863102359
+      },
+      {
+        "index": 16749478,
+        "image_name": "461/0019851612.jpg",
+        "distance": 1.2439548422942104
+      },
+      {
+        "index": 1106309,
+        "image_name": "057/0001980075.jpg",
+        "distance": 1.2439959058059442
+      },
+      {
+        "index": 15558879,
+        "image_name": "436/0049851727.jpg",
+        "distance": 1.2441332600935646
+      },
+      {
+        "index": 17746454,
+        "image_name": "499/0054085539.jpg",
+        "distance": 1.2442111141124728
+      },
+      {
+        "index": 2751396,
+        "image_name": "110/0003923041.jpg",
+        "distance": 1.2443327980178098
+      },
+      {
+        "index": 9690181,
+        "image_name": "285/0011553755.jpg",
+        "distance": 1.2443868107592482
+      },
+      {
+        "index": 2752910,
+        "image_name": "110/0003911497.jpg",
+        "distance": 1.244466694762671
+      },
+      {
+        "index": 16414967,
+        "image_name": "453/0050932900.jpg",
+        "distance": 1.2445033192887325
+      },
+      {
+        "index": 3352365,
+        "image_name": "126/0004561470.jpg",
+        "distance": 1.2445468262329946
+      },
+      {
+        "index": 5276127,
+        "image_name": "172/0006636104.jpg",
+        "distance": 1.2445954224213505
+      },
+      {
+        "index": 490795,
+        "image_name": "036/0001098791.jpg",
+        "distance": 1.24507099860194
+      },
+      {
+        "index": 3488776,
+        "image_name": "129/0004714078.jpg",
+        "distance": 1.245156002379105
+      },
+      {
+        "index": 18843519,
+        "image_name": "531/0070704606.jpg",
+        "distance": 1.2451853011487715
+      },
+      {
+        "index": 17973755,
+        "image_name": "504/0054326751.jpg",
+        "distance": 1.2453701192605
+      },
+      {
+        "index": 19048643,
+        "image_name": "535/0070870919.jpg",
+        "distance": 1.2454238087839566
+      },
+      {
+        "index": 491220,
+        "image_name": "036/0001098239.jpg",
+        "distance": 1.2454622725243032
+      },
+      {
+        "index": 11706588,
+        "image_name": "341/0014195593.jpg",
+        "distance": 1.2455209375624097
+      },
+      {
+        "index": 12418432,
+        "image_name": "361/0033873785.jpg",
+        "distance": 1.2456373571599
+      },
+      {
+        "index": 8220823,
+        "image_name": "250/0009939184.jpg",
+        "distance": 1.245650810839151
+      },
+      {
+        "index": 3161791,
+        "image_name": "122/0004373173.jpg",
+        "distance": 1.2459200570414455
+      },
+      {
+        "index": 15122043,
+        "image_name": "427/0049370632.jpg",
+        "distance": 1.245923309881348
+      },
+      {
+        "index": 8248365,
+        "image_name": "250/0009947590.jpg",
+        "distance": 1.2459608753844331
+      },
+      {
+        "index": 15140051,
+        "image_name": "427/0049370640.jpg",
+        "distance": 1.2459692918298626
+      },
+      {
+        "index": 5049108,
+        "image_name": "167/0006391164.jpg",
+        "distance": 1.2461346184738331
+      },
+      {
+        "index": 19151745,
+        "image_name": "552/0056799533.jpg",
+        "distance": 1.2461558212329826
+      }
+    ]
+  }
+]

@@ -1,0 +1,356 @@
+[
+  {
+    "timestamp": "2026-05-31T15:00:53.365098",
+    "session_id": "538c26f5-4213-4285-9171-8c7d6161cad1",
+    "feedback_search_id": "b0a5d34a-fe58-47f4-9938-175fcfe41a67",
+    "query_type": "text",
+    "query_text": "perfect evening",
+    "query_image_index": null,
+    "query_image_name": null,
+    "model": "RobustODML",
+    "feedback_type": 3,
+    "feedback_type_name": "All Possible Pairs",
+    "model_params": {
+      "C": 0.0035,
+      "eta": 0.07,
+      "max_hq_iter": 1
+    },
+    "feedback_params": {},
+    "distance_mode": "dot_product",
+    "scaling_factor_before": 1.0,
+    "scaling_factor_after": 1.0608058426564988,
+    "performance_metrics": {
+      "feedback_processing_matrix_save_ms": 1353.14,
+      "model_learning_ms": 31176.51,
+      "feedback_processing": {
+        "feedback_db_ms": 449.602,
+        "feedback_vector_fetch_ms": 62.55,
+        "scaling_factor_ms": 201.884,
+        "matrix_db_save_ms": 639.106
+      },
+      "total_flow_time_ms": 35940.17,
+      "num_results_requested": 20,
+      "num_results_candidate_set": 3802,
+      "num_results_candidate_set_progressive_filter": null,
+      "num_results_candidate_set_full_mahalanobis_filter": 3802,
+      "num_results_refined_set": 20,
+      "range_r_e": 1.323839,
+      "range_progressive": null,
+      "range_r_m_full": 1.247956,
+      "clip_encode_ms": 1043.908,
+      "faiss_knn_ms": 3.565,
+      "faiss_range_ms": 3.272,
+      "reconstruct_ms": 2087.067,
+      "refine_ms": 272.708
+    },
+    "user_feedback": {
+      "selected_positives": [
+        {
+          "index": 17820128,
+          "image_name": "501/0054207026.jpg"
+        },
+        {
+          "index": 6176474,
+          "image_name": "201/0007736544.jpg"
+        },
+        {
+          "index": 17942675,
+          "image_name": "503/0054302992.jpg"
+        },
+        {
+          "index": 495495,
+          "image_name": "036/0001098789.jpg"
+        },
+        {
+          "index": 6009573,
+          "image_name": "197/0007515573.jpg"
+        },
+        {
+          "index": 19415065,
+          "image_name": "558/0077109556.jpg"
+        }
+      ],
+      "selected_negatives": [
+        {
+          "index": 8220823,
+          "image_name": "250/0009939184.jpg"
+        },
+        {
+          "index": 12859834,
+          "image_name": "372/0034460917.jpg"
+        },
+        {
+          "index": 9859944,
+          "image_name": "289/0011745617.jpg"
+        },
+        {
+          "index": 1106309,
+          "image_name": "057/0001980075.jpg"
+        },
+        {
+          "index": 13376364,
+          "image_name": "382/0035016342.jpg"
+        },
+        {
+          "index": 9039977,
+          "image_name": "271/0010873820.jpg"
+        },
+        {
+          "index": 2739559,
+          "image_name": "110/0003936108.jpg"
+        },
+        {
+          "index": 16690568,
+          "image_name": "460/0016450824.jpg"
+        },
+        {
+          "index": 11682459,
+          "image_name": "341/0014208035.jpg"
+        }
+      ],
+      "implicit_positives": [],
+      "implicit_negatives": [],
+      "total_positives_used": 6,
+      "total_negatives_used": 9
+    },
+    "distance_metric": "mahalanobis",
+    "base_metric": "cosine",
+    "search_pipeline": "filter+refine"
+  },
+  {
+    "timestamp": "2026-05-31T15:01:30.873651",
+    "session_id": "538c26f5-4213-4285-9171-8c7d6161cad1",
+    "feedback_search_id": "42ff6146-c65e-4de5-a127-c1502d44e5ce",
+    "query_type": "text",
+    "query_text": "perfect evening",
+    "query_image_index": null,
+    "query_image_name": null,
+    "model": "RobustODML",
+    "feedback_type": 3,
+    "feedback_type_name": "All Possible Pairs",
+    "model_params": {
+      "C": 0.0035,
+      "eta": 0.07,
+      "max_hq_iter": 1
+    },
+    "feedback_params": {},
+    "distance_mode": "dot_product",
+    "scaling_factor_before": 1.0608058426564988,
+    "scaling_factor_after": 1.069015953861927,
+    "performance_metrics": {
+      "feedback_processing_matrix_save_ms": 526.91,
+      "model_learning_ms": 15588.94,
+      "feedback_processing": {
+        "feedback_db_ms": 108.043,
+        "feedback_vector_fetch_ms": 22.019,
+        "scaling_factor_ms": 209.341,
+        "matrix_db_save_ms": 187.508
+      },
+      "total_flow_time_ms": 19514.26,
+      "num_results_requested": 20,
+      "num_results_candidate_set": 3803,
+      "num_results_candidate_set_progressive_filter": null,
+      "num_results_candidate_set_full_mahalanobis_filter": 3803,
+      "num_results_refined_set": 20,
+      "range_r_e": 1.334085,
+      "range_progressive": null,
+      "range_r_m_full": 1.247956,
+      "clip_encode_ms": 1004.022,
+      "faiss_knn_ms": 3.534,
+      "faiss_range_ms": 3.43,
+      "reconstruct_ms": 2113.624,
+      "refine_ms": 273.801
+    },
+    "user_feedback": {
+      "selected_positives": [
+        {
+          "index": 5058777,
+          "image_name": "167/0006391165.jpg"
+        },
+        {
+          "index": 492206,
+          "image_name": "036/0001098790.jpg"
+        },
+        {
+          "index": 6000028,
+          "image_name": "197/0007514512.jpg"
+        },
+        {
+          "index": 974785,
+          "image_name": "054/0001849583.jpg"
+        },
+        {
+          "index": 17819892,
+          "image_name": "501/0054213592.jpg"
+        },
+        {
+          "index": 17820128,
+          "image_name": "501/0054207026.jpg"
+        },
+        {
+          "index": 17955685,
+          "image_name": "503/0054302991.jpg"
+        },
+        {
+          "index": 1291695,
+          "image_name": "069/0002256860.jpg"
+        },
+        {
+          "index": 495495,
+          "image_name": "036/0001098789.jpg"
+        },
+        {
+          "index": 6009573,
+          "image_name": "197/0007515573.jpg"
+        },
+        {
+          "index": 6176474,
+          "image_name": "201/0007736544.jpg"
+        },
+        {
+          "index": 19415065,
+          "image_name": "558/0077109556.jpg"
+        },
+        {
+          "index": 17942675,
+          "image_name": "503/0054302992.jpg"
+        }
+      ],
+      "selected_negatives": [
+        {
+          "index": 17853271,
+          "image_name": "501/0054206941.jpg"
+        },
+        {
+          "index": 18820539,
+          "image_name": "531/0070704427.jpg"
+        }
+      ],
+      "implicit_positives": [],
+      "implicit_negatives": [],
+      "total_positives_used": 13,
+      "total_negatives_used": 2
+    },
+    "distance_metric": "mahalanobis",
+    "base_metric": "cosine",
+    "search_pipeline": "filter+refine"
+  },
+  {
+    "timestamp": "2026-05-31T15:02:07.227931",
+    "session_id": "538c26f5-4213-4285-9171-8c7d6161cad1",
+    "feedback_search_id": "07eeaaf2-0405-440f-bb3f-a330ac64f30c",
+    "query_type": "text",
+    "query_text": "perfect evening",
+    "query_image_index": null,
+    "query_image_name": null,
+    "model": "RobustODML",
+    "feedback_type": 3,
+    "feedback_type_name": "All Possible Pairs",
+    "model_params": {
+      "C": 0.0035,
+      "eta": 0.07,
+      "max_hq_iter": 1
+    },
+    "feedback_params": {},
+    "distance_mode": "dot_product",
+    "scaling_factor_before": 1.069015953861927,
+    "scaling_factor_after": 1.072142651929294,
+    "performance_metrics": {
+      "feedback_processing_matrix_save_ms": 509.95,
+      "model_learning_ms": 15641.65,
+      "feedback_processing": {
+        "feedback_db_ms": 92.113,
+        "feedback_vector_fetch_ms": 21.527,
+        "scaling_factor_ms": 218.155,
+        "matrix_db_save_ms": 178.155
+      },
+      "total_flow_time_ms": 19557.02,
+      "num_results_requested": 20,
+      "num_results_candidate_set": 3803,
+      "num_results_candidate_set_progressive_filter": null,
+      "num_results_candidate_set_full_mahalanobis_filter": 3803,
+      "num_results_refined_set": 20,
+      "range_r_e": 1.337987,
+      "range_progressive": null,
+      "range_r_m_full": 1.247956,
+      "clip_encode_ms": 1048.665,
+      "faiss_knn_ms": 4.347,
+      "faiss_range_ms": 4.074,
+      "reconstruct_ms": 2078.307,
+      "refine_ms": 270.022
+    },
+    "user_feedback": {
+      "selected_positives": [
+        {
+          "index": 6000028,
+          "image_name": "197/0007514512.jpg"
+        },
+        {
+          "index": 492206,
+          "image_name": "036/0001098790.jpg"
+        },
+        {
+          "index": 5058777,
+          "image_name": "167/0006391165.jpg"
+        },
+        {
+          "index": 17819892,
+          "image_name": "501/0054213592.jpg"
+        },
+        {
+          "index": 17820128,
+          "image_name": "501/0054207026.jpg"
+        },
+        {
+          "index": 1291695,
+          "image_name": "069/0002256860.jpg"
+        },
+        {
+          "index": 17955685,
+          "image_name": "503/0054302991.jpg"
+        },
+        {
+          "index": 974785,
+          "image_name": "054/0001849583.jpg"
+        },
+        {
+          "index": 495495,
+          "image_name": "036/0001098789.jpg"
+        },
+        {
+          "index": 6176474,
+          "image_name": "201/0007736544.jpg"
+        },
+        {
+          "index": 6009573,
+          "image_name": "197/0007515573.jpg"
+        },
+        {
+          "index": 17942675,
+          "image_name": "503/0054302992.jpg"
+        },
+        {
+          "index": 19415065,
+          "image_name": "558/0077109556.jpg"
+        }
+      ],
+      "selected_negatives": [
+        {
+          "index": 3631849,
+          "image_name": "132/0004859100.jpg"
+        },
+        {
+          "index": 492744,
+          "image_name": "036/0001098786.jpg"
+        }
+      ],
+      "implicit_positives": [],
+      "implicit_negatives": [],
+      "total_positives_used": 13,
+      "total_negatives_used": 2
+    },
+    "distance_metric": "mahalanobis",
+    "base_metric": "cosine",
+    "search_pipeline": "filter+refine"
+  }
+]

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}My Django Site{% endblock %}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        .navbar h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: linear-gradient(90deg, #e0e0ff, #a8b8ff, #e0e0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .navbar-icon {
+            -webkit-text-fill-color: initial;
+            margin-right: 2px;
+        }
+        .navbar-links {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .navbar-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .navbar-links a:hover {
+            background-color: #555;
+        }
+        .navbar-links .username {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        /* User Dropdown Menu */
+        .user-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .user-dropdown-btn {
+            background-color: transparent;
+            color: white;
+            padding: 8px 15px;
+            border: 1px solid #4CAF50;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .user-dropdown-btn:hover {
+            background-color: #555;
+        }
+
+        .user-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: white;
+            min-width: 220px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            border-radius: 4px;
+            z-index: 1000;
+            margin-top: 5px;
+        }
+
+        .user-dropdown-content a,
+        .user-dropdown-content button {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            text-align: left;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .user-dropdown-content a:hover,
+        .user-dropdown-content button:hover {
+            background-color: #f1f1f1;
+        }
+
+        .user-dropdown-content .dropdown-divider {
+            height: 1px;
+            background-color: #ddd;
+            margin: 5px 0;
+        }
+
+        .user-dropdown.show .user-dropdown-content {
+            display: block;
+        }
+
+        .search-container {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .search-container input[type=text] {
+            padding: 10px;
+            width: 60%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .search-container button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .messages {
+            margin: 20px 0;
+        }
+        .message {
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+        .message.success {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        .message.info {
+            background-color: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>Personalised Image Similarity Search</h1>
+        <div class="navbar-links">
+            {% if request.session.username %}
+                <div class="user-dropdown" id="userDropdown">
+                    <button class="user-dropdown-btn" onclick="toggleUserDropdown()">
+                        <span class="username">👤 {{ request.session.username }}</span>
+                        <span>▼</span>
+                    </button>
+                    <div class="user-dropdown-content">
+                        <button onclick="openSettingsFromNav()">⚙️ Personalization Settings</button>
+                        <button onclick="resetMatrixFromNav()">↺ Reset Matrix</button>
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'logout' %}">🚪 Logout</a>
+                    </div>
+                </div>
+            {% else %}
+                <a href="{% url 'login' %}">Login</a>
+                <a href="{% url 'register' %}">Register</a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="container">
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="message {{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+        // Toggle user dropdown menu
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        // Close dropdown when clicking outside
+        window.addEventListener('click', function(event) {
+            if (!event.target.closest('.user-dropdown')) {
+                const dropdown = document.getElementById('userDropdown');
+                if (dropdown) {
+                    dropdown.classList.remove('show');
+                }
+            }
+        });
+
+        // These functions will be called from home.html if they exist there
+        function openSettingsFromNav() {
+            if (typeof openSettingsModal === 'function') {
+                openSettingsModal();
+            } else {
+                alert('Settings are only available on the search page.');
+            }
+            document.getElementById('userDropdown').classList.remove('show');
+        }
+
+        function resetMatrixFromNav() {
+            if (typeof resetMatrix === 'function') {
+                resetMatrix();
+            } else {
+                alert('Matrix reset is only available on the search page.');
+            }
+            document.getElementById('userDropdown').classList.remove('show');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "scaling_factor": 1.0237004640304537,
+  "model": "OASIS",
+  "feedback_type": 3,
+  "feedback_type_name": "All Possible Pairs",
+  "model_params": {
+    "C": 0.001,
+    "enforce_psd": "true"
+  },
+  "feedback_params": {},
+  "distance_mode": "euclidean",
+  "updated_at": "2026-05-31T12:36:10.374112+00:00",
+  "dimension": 768
+}

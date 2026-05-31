@@ -1,0 +1,15 @@
+{
+  "scaling_factor": 1.161860144823715,
+  "model": "RobustODML",
+  "feedback_type": 3,
+  "feedback_type_name": "All Possible Pairs",
+  "model_params": {
+    "C": 0.007,
+    "eta": 0.07,
+    "max_hq_iter": 1
+  },
+  "feedback_params": {},
+  "distance_mode": "euclidean",
+  "updated_at": "2026-05-31T13:04:22.739329+00:00",
+  "dimension": 768
+}

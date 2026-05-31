@@ -1,0 +1,15 @@
+{
+  "scaling_factor": 1.0707244320871048,
+  "model": "SORS",
+  "feedback_type": 3,
+  "feedback_type_name": "All Possible Pairs",
+  "model_params": {
+    "eta": 0.005,
+    "reg_lambda": 1e-06,
+    "reg_type": "offdiag"
+  },
+  "feedback_params": {},
+  "distance_mode": "euclidean",
+  "updated_at": "2026-05-31T12:53:28.585301+00:00",
+  "dimension": 768
+}

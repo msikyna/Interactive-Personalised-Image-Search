@@ -1,0 +1,2836 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Personalised Image Similarity Search{% endblock %}
+
+{% block content %}
+    <!-- Login Overlay for non-logged-in users -->
+    {% if not user_logged_in %}
+    <div id="loginOverlay" class="login-overlay" style="display: none;">
+        <div class="login-overlay-content">
+            <h2>🔐 Personalized Image Similarity Search</h2>
+            <p>To enable <strong>personalized search results</strong> with metric learning and relevance feedback, please log in or register.</p>
+            <p>Without logging in, searches will use the standard Inner Product index only.</p>
+            <div class="login-overlay-actions">
+                <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
+                <a href="{% url 'register' %}" class="btn btn-secondary">Register</a>
+                <button onclick="closeLoginOverlay()" class="btn btn-secondary">Continue without login</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Show login overlay only if not previously dismissed in this session
+        if (!sessionStorage.getItem('loginOverlayDismissed')) {
+            document.getElementById('loginOverlay').style.display = 'flex';
+        }
+    </script>
+    {% endif %}
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Loading...</p>
+        </div>
+    </div>
+
+    <div class="container">
+
+        {% if dataset_loaded %}
+
+            <!-- Personalization Settings Section - Fixed Sidebar -->
+            {% if user_logged_in %}
+            <div id="personalizationSettings" class="personalization-sidebar collapsed sidebar-initializing">
+                <div class="sidebar-header" onclick="togglePersonalizationSidebar()">
+                    <span class="sidebar-title">⚙️ Personalization Settings</span>
+                    <span class="sidebar-toggle">◀</span>
+                </div>
+                <div class="sidebar-content">
+                    <div class="sidebar-badges">
+                        <div class="sidebar-badge"><span class="badge-label">Scaling Factor:</span> <span id="scalingFactorDisplay">...</span></div>
+                        <div class="sidebar-badge"><span class="badge-label">Feedback Type:</span> <span id="feedbackTypeDisplay">...</span></div>
+                    </div>
+                    <div class="sidebar-params">
+                        <span class="badge-label">Feedback Params:</span>
+                        <span id="feedbackParamsDisplay" class="params-inline">...</span>
+                    </div>
+                    <div class="sidebar-badges">
+                        <div class="sidebar-badge"><span class="badge-label">Model:</span> <span id="modelNameDisplay">...</span></div>
+                    </div>
+                    <div class="sidebar-params">
+                        <span class="badge-label">Model Params:</span>
+                        <span id="modelParamsDisplay" class="params-inline">...</span>
+                    </div>
+                    <div class="sidebar-buttons">
+                        <button onclick="openSettingsModal()" class="btn btn-settings-white btn-sm">🔧 Change Settings</button>
+                        <button onclick="resetMatrix()" class="btn btn-settings-outline btn-sm">🔄 Reset Matrix</button>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-expand-tab visible sidebar-initializing" onclick="togglePersonalizationSidebar()">⚙️ Personalization Settings</div>
+            <script>
+                (function initSidebarStateEarly() {
+                    const sidebar = document.getElementById('personalizationSettings');
+                    const expandTab = document.querySelector('.sidebar-expand-tab');
+                    if (!sidebar) return;
+
+                    const savedPreference = localStorage.getItem('personalizationSidebarCollapsed');
+                    const shouldCollapse = savedPreference !== 'false'; // default: collapsed
+
+                    if (shouldCollapse) {
+                        sidebar.classList.add('collapsed');
+                        if (expandTab) expandTab.classList.add('visible');
+                    } else {
+                        sidebar.classList.remove('collapsed');
+                        if (expandTab) expandTab.classList.remove('visible');
+                    }
+
+                    sidebar.classList.remove('sidebar-initializing');
+                    if (expandTab) expandTab.classList.remove('sidebar-initializing');
+                })();
+            </script>
+            {% endif %}
+
+            <div class="search-controls">
+                <div class="search-header">
+                    <h3>🔍 Search</h3>
+                    <a href="{% url 'home' %}" class="btn btn-secondary btn-sm">🎲 Random Images</a>
+                </div>
+                <div class="search-forms-grid">
+                    <form action="{% url 'home' %}" method="GET" class="search-form text-search-form">
+                        <div class="form-header">Text Input</div>
+                        <div class="form-row-main">
+                            <input type="text" name="text_query" id="text_query" value="{{ text_query }}"
+                                   placeholder="e.g., a dog playing in the park" class="form-input-main">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                        </div>
+                        <div class="form-row-options">
+                            <div class="form-option-group">
+                                <label for="metric_text" class="form-label-inline">Index</label>
+                                <select name="metric" id="metric_text" class="form-select-sm">
+                                    <option value="cosine" {% if distance_metric == 'cosine' %}selected{% endif %}>Inner Product</option>
+                                </select>
+                            </div>
+                            <div class="form-option-group">
+                                <label for="num_results_text" class="form-label-inline">Number of results</label>
+                                <input type="number" name="num_results" id="num_results_text" value="{{ num_results|default:20 }}" min="1" max="100" class="form-input-num">
+                            </div>
+                        </div>
+                    </form>
+
+                    <form action="{% url 'image_upload_search' %}" method="POST" enctype="multipart/form-data" class="search-form image-search-form">
+                        {% csrf_token %}
+                        <div class="form-header">Image Upload Input</div>
+                        <div class="form-row-main">
+                            <input type="file" name="image" id="image_upload" accept="image/*" required class="form-input-main">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                        </div>
+                        <div class="form-row-options">
+                            <div class="form-option-group">
+                                <label for="metric_image" class="form-label-inline">Index</label>
+                                <select name="metric" id="metric_image" class="form-select-sm">
+                                    <option value="cosine" {% if distance_metric == 'cosine' %}selected{% endif %}>Inner Product</option>
+                                </select>
+                            </div>
+                            <div class="form-option-group">
+                                <label for="num_results_image" class="form-label-inline">Number of results</label>
+                                <input type="number" name="num_results" id="num_results_image" value="{{ num_results|default:20 }}" min="1" max="100" class="form-input-num">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+{#            {% if messages %}#}
+{#                {% for message in messages %}#}
+{#                    <div class="alert alert-{{ message.tags }}">#}
+{#                        <strong>{% if message.tags == 'error' %}Error:{% else %}{{ message.tags|title }}:{% endif %}</strong> {{ message }}#}
+{#                    </div>#}
+{#                {% endfor %}#}
+{#            {% endif %}#}
+
+            {% if error %}
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> {{ error }}
+                </div>
+            {% endif %}
+
+            {% if results %}
+                <div class="results-section">
+                    <div class="results-header">
+                        <h2>Search Results</h2>
+                        {% if results.query_type == 'text' %}
+                            <div class="query-info-compact">
+                                <span class="query-label">Query:</span>
+                                <span class="query-text-compact">"{{ results.query_text }}"</span>
+                            </div>
+                        {% elif results.query_type == 'image' %}
+                            <div class="query-info-compact">
+                                <span class="query-label">Query Image:</span>
+                                <img src="{% url 'serve_image' results.anchor_name %}" alt="{{ results.anchor_name }}" class="query-thumbnail">
+                                <span class="query-image-name">{{ results.anchor_name }}</span>
+                            </div>
+                        {% elif results.query_type == 'uploaded_image' %}
+                            <div class="query-info-compact">
+                                <span class="query-label">Uploaded:</span>
+                                {% if results.uploaded_image_data %}
+                                    <img src="{{ results.uploaded_image_data }}" alt="{{ results.uploaded_image_name }}" class="query-thumbnail uploaded">
+                                {% endif %}
+                                <span class="query-image-name">{{ results.uploaded_image_name }}</span>
+                            </div>
+                        {% endif %}
+                        <div class="results-meta">
+                            <span class="meta-count" id="resultsCount">{{ results.results|length }} results</span>
+                            <span class="meta-metric" id="resultsMetric">
+                                Index:
+                                {% with metric=results.distance_metric|default:distance_metric base_metric=results.base_metric|default:distance_metric %}
+                                    {% if metric == 'cosine' %}
+                                        Inner Product
+                                    {% elif metric == 'euclidean' %}
+                                        Euclidean
+                                    {% elif metric == 'dot_product' %}
+                                        Inner Product
+                                    {% elif metric == 'mahalanobis' %}
+                                        {% if base_metric == 'cosine' or base_metric == 'dot_product' %}
+                                            Inner Product + Mahalanobis rerank
+                                        {% elif base_metric == 'euclidean' %}
+                                            Euclidean + Mahalanobis rerank
+                                        {% else %}
+                                            Mahalanobis rerank
+                                        {% endif %}
+                                    {% else %}
+                                        {{ metric|capfirst }}
+                                    {% endif %}
+                                {% endwith %}
+                            </span>
+                            {% if results.progressive_pending %}
+                                <span class="meta-progress-note" id="progressiveNote">
+                                    ⏳ Loading full personalized results...
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if user_logged_in %}
+                        <div class="feedback-info-inline">
+                            <p>💡 Mark images as relevant (👍) or irrelevant (👎). Your feedback will be <strong>incorporated automatically</strong> before your next search to personalize results.</p>
+                        </div>
+
+                        <!-- Rerun Query Section -->
+                        <div id="rerunQuerySection" class="rerun-query-section" style="display: none;">
+                            <button class="rerun-close-btn" onclick="document.getElementById('rerunQuerySection').style.display='none'">×</button>
+                            <div class="rerun-query-content">
+                                <p><strong>Done providing feedback?</strong></p>
+                                <p>Would you like to rerun the same query to see how your feedback improved the results?</p>
+                                <button onclick="rerunQueryWithFeedback()" class="btn btn-primary">🔄 Rerun Query with Feedback</button>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="image-grid">
+                        {% for result in results.results %}
+                            <div class="image-item" data-image-index="{{ result.index }}" data-image-name="{{ result.image_name }}">
+                                <a href="{% url 'home' %}?image_index={{ result.index }}&metric={{ distance_metric|default:'cosine' }}&num_results={{ num_results|default:20 }}" class="image-link">
+                                    <img src="{% url 'serve_image' result.image_name %}"
+                                         alt="{{ result.image_name }}"
+                                         loading="lazy"
+                                         onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23ddd%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23666%22%3ENo image%3C/text%3E%3C/svg%3E';">
+                                </a>
+                                <div class="image-info">
+                                    <p class="distance">Distance: {{ result.distance|floatformat:5 }}</p>
+                                    {% if result.current_rank %}
+                                        <p class="rank-change rank-change-{{ result.rank_change_direction|default:'same' }}">
+                                            <span class="rank-label">Rank #{{ result.current_rank }}</span>
+                                            <span class="rank-separator">·</span>
+                                            {% if result.rank_change_direction == 'improved' %}
+                                                <span class="rank-movement">Improved by {{ result.rank_change_abs }}</span>
+                                            {% elif result.rank_change_direction == 'worsened' %}
+                                                <span class="rank-movement">Worsened by {{ result.rank_change_abs }}</span>
+                                            {% elif result.rank_change_direction == 'new' %}
+                                                <span class="rank-movement">New in results</span>
+                                            {% else %}
+                                                <span class="rank-movement">No change</span>
+                                            {% endif %}
+                                        </p>
+                                    {% endif %}
+
+                                    {% if user_logged_in %}
+                                        <div class="feedback-buttons">
+                                            <button class="feedback-btn like-btn {% if feedback_map and feedback_map|get_item:result.index == 'positive' %}active{% endif %}"
+                                                    onclick="provideFeedback(event, {{ result.index }}, '{{ result.image_name }}', 'positive')"
+                                                    title="Mark as relevant">
+                                                👍
+                                            </button>
+                                            <button class="feedback-btn dislike-btn {% if feedback_map and feedback_map|get_item:result.index == 'negative' %}active{% endif %}"
+                                                    onclick="provideFeedback(event, {{ result.index }}, '{{ result.image_name }}', 'negative')"
+                                                    title="Mark as irrelevant">
+                                                👎
+                                            </button>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% elif random_images %}
+                <div class="random-images-section">
+                    <h3>Random Images from the Dataset</h3>
+                    <div class="image-grid">
+                        {% for image in random_images %}
+                            <div class="image-item">
+                                <a href="{% url 'home' %}?image_index={{ image.index }}&metric=cosine&num_results=20" class="image-link">
+                                    <img src="{% url 'serve_image' image.image_name %}"
+                                         alt="{{ image.image_name }}"
+                                         loading="lazy"
+                                         onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23ddd%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23666%22%3ENo image%3C/text%3E%3C/svg%3E';">
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="startup-status-section">
+                <h3>Starting Service...</h3>
+                <p id="startupStatusText" class="startup-status-text">
+                    Loading dataset and indexes. Logs are shown below.
+                </p>
+                <pre id="startupLogs" class="startup-logs">{% if startup_logs %}{% for line in startup_logs %}{{ line }}
+{% endfor %}{% else %}Waiting for startup logs...{% endif %}</pre>
+            </div>
+            <script>
+                (function initStartupStatusPolling() {
+                    const statusEl = document.getElementById('startupStatusText');
+                    const logsEl = document.getElementById('startupLogs');
+                    const startupUrl = "{% url 'startup_status_api' %}";
+                    let pollHandle = null;
+                    let completed = false;
+
+                    function setStatus(text, cls) {
+                        if (!statusEl) return;
+                        statusEl.textContent = text;
+                        statusEl.className = `startup-status-text ${cls || ''}`.trim();
+                    }
+
+                    function setLogs(lines) {
+                        if (!logsEl) return;
+                        if (!Array.isArray(lines) || lines.length === 0) {
+                            return;
+                        }
+                        logsEl.textContent = lines.join('\n');
+                        logsEl.scrollTop = logsEl.scrollHeight;
+                    }
+
+                    async function poll() {
+                        if (completed) return;
+                        try {
+                            const response = await fetch(startupUrl, { cache: 'no-store' });
+                            if (!response.ok) {
+                                setStatus(`Startup status check failed (${response.status}). Retrying...`, 'warn');
+                                return;
+                            }
+                            const data = await response.json();
+                            if (!data || data.success !== true) {
+                                setStatus('Startup status unavailable. Retrying...', 'warn');
+                                return;
+                            }
+
+                            setLogs(data.logs || []);
+
+                            if (data.ready) {
+                                completed = true;
+                                setStatus('Startup complete. Loading the application...', 'ok');
+                                if (pollHandle) clearInterval(pollHandle);
+                                setTimeout(() => window.location.reload(), 500);
+                                return;
+                            }
+
+                            if (data.phase === 'error') {
+                                const err = data.error ? ` ${data.error}` : '';
+                                setStatus(`Startup failed.${err}`, 'err');
+                            } else if (data.phase === 'disabled') {
+                                setStatus('Auto-load disabled. Load dataset manually.', 'warn');
+                            } else {
+                                setStatus('Service is starting. This can take a while for large indexes...', 'info');
+                            }
+                        } catch (error) {
+                            setStatus('Could not read startup status. Retrying...', 'warn');
+                        }
+                    }
+
+                    poll();
+                    pollHandle = setInterval(poll, 2000);
+                })();
+            </script>
+        {% endif %}
+    </div>
+
+    <style>
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(3px);
+        }
+
+        .loading-content {
+            background: white;
+            padding: 30px 50px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e0e0e0;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .startup-status-section {
+            margin-top: 20px;
+            border: 1px solid #d9e0e8;
+            border-radius: 10px;
+            background: #f8fbff;
+            padding: 14px;
+        }
+
+        .startup-status-section h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+        }
+
+        .startup-status-text {
+            margin: 0 0 10px 0;
+            color: #334155;
+            font-size: 14px;
+        }
+
+        .startup-status-text.ok { color: #0f766e; }
+        .startup-status-text.warn { color: #b45309; }
+        .startup-status-text.err { color: #b91c1c; }
+        .startup-status-text.info { color: #1d4ed8; }
+
+        .startup-logs {
+            margin: 0;
+            padding: 10px;
+            max-height: 360px;
+            overflow: auto;
+            background: #0f172a;
+            color: #e2e8f0;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.35;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+
+        .alert-danger, .alert-error {
+            background-color: #f8d7da;
+            border: 1px solid #dc3545;
+            color: #721c24;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #28a745;
+            color: #155724;
+        }
+
+        .search-controls {
+            margin-bottom: 15px;
+        }
+
+        .search-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .search-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .search-forms-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 900px) {
+            .search-forms-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .search-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 0;
+        }
+
+        .form-header {
+            font-weight: 600;
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 4px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .form-row-main {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .form-row-main .form-input-main {
+            flex: 1;
+        }
+
+        .form-row-options {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            margin-top: 2px;
+        }
+
+        .form-option-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .form-input-main {
+            flex: 1;
+            min-width: 150px;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-select-sm {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+            min-width: 90px;
+        }
+
+        .form-input-num {
+            width: 60px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .form-label-inline {
+            font-size: 12px;
+            color: #555;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .text-search-form {
+            background-color: #e7f3ff;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .image-search-form {
+            background-color: #fff3e0;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 150px;
+        }
+
+        .form-group:first-child {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        /* Compact results header */
+        .results-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .results-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .query-info-compact {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f0f4f8;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .query-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .query-text-compact {
+            color: #0056b3;
+            font-style: italic;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .query-thumbnail {
+            width: 32px;
+            height: 32px;
+            object-fit: cover;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .query-thumbnail.uploaded {
+            border: 2px solid #ff9800;
+        }
+
+        .query-image-name {
+            color: #333;
+            font-size: 13px;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .results-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        .meta-badge {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .meta-count {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .meta-metric {
+            color: #444;
+            font-size: 13px;
+            background: #f3f5f7;
+            border: 1px solid #dce3ea;
+            padding: 4px 10px;
+            border-radius: 12px;
+            white-space: nowrap;
+        }
+
+        .meta-progress-note {
+            background: #e3f2fd;
+            color: #0d47a1;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid #90caf9;
+            white-space: nowrap;
+        }
+
+        /* Keep old styles for backwards compatibility */
+        .query-info {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .text-query {
+            font-size: 18px;
+            font-style: italic;
+            color: #0056b3;
+        }
+
+        .anchor-image-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .anchor-image-display img {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .anchor-image-display p {
+            margin: 5px 0;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .image-item {
+            border: 1px solid #d8d8d8;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .image-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            width: 100%;
+            height: 200px;
+            padding: 6px;
+            border: none;
+            border-radius: 0;
+            background: transparent;
+        }
+
+        .image-link::after {
+            content: '🔍';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 16px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .image-link:hover::after {
+            opacity: 1;
+        }
+
+        .image-link:hover img {
+            opacity: 0.85;
+        }
+
+        .image-item img {
+            width: auto;
+            max-width: 100%;
+            max-height: 100%;
+            height: auto;
+            object-fit: contain;
+            display: block;
+            margin: 0;
+            transition: opacity 0.2s;
+        }
+
+        .image-item:hover {
+            border-color: #b9c8df;
+        }
+
+        .image-info {
+            padding: 10px;
+        }
+
+        .image-name {
+            font-size: 12px;
+            margin: 5px 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .distance {
+            font-weight: bold;
+            color: #007bff;
+            margin: 5px 0;
+        }
+
+        .rank-change {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            margin: 4px 0 0;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .rank-label {
+            color: #4f5d73;
+        }
+
+        .rank-separator {
+            color: #9aa7b8;
+        }
+
+        .rank-change-improved .rank-movement {
+            color: #1f8a4d;
+        }
+
+        .rank-change-worsened .rank-movement {
+            color: #c03b33;
+        }
+
+        .rank-change-same .rank-movement {
+            color: #64748b;
+        }
+
+        .rank-change-new .rank-movement {
+            color: #9a6b12;
+        }
+
+        .random-images-section {
+            margin-top: 30px;
+        }
+
+        /* Feedback info inline */
+        .feedback-info-inline {
+            background-color: #e8f5e9;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .feedback-info-inline p {
+            margin: 0;
+            color: #2e7d32;
+        }
+
+        /* Old feedback styles kept for backwards compatibility */
+        .feedback-controls {
+            background-color: #f0f8ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px solid #4CAF50;
+        }
+
+        .feedback-info {
+            margin-bottom: 15px;
+        }
+
+        .feedback-info p {
+            margin: 0;
+            color: #333;
+        }
+
+        .feedback-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .feedback-notice {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #ffc107;
+        }
+
+        .feedback-notice p {
+            margin: 0;
+        }
+
+        .feedback-buttons {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .feedback-btn {
+            background-color: #f5f5f5;
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .feedback-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .feedback-btn.like-btn.active {
+            background-color: #4CAF50;
+            border-color: #4CAF50;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+        }
+
+        .feedback-btn.dislike-btn.active {
+            background-color: #f44336;
+            border-color: #f44336;
+            box-shadow: 0 2px 8px rgba(244, 67, 54, 0.4);
+        }
+
+        .btn-success {
+            background-color: #4CAF50;
+        }
+
+        .btn-success:hover {
+            background-color: #45a049;
+        }
+
+        .btn-warning {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #e68900;
+        }
+
+        /* Settings Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+        }
+
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .settings-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .settings-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .settings-form select,
+        .settings-form input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        /* Login Overlay */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .login-overlay-content {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-overlay-content h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .login-overlay-content p {
+            margin: 15px 0;
+            font-size: 16px;
+            color: #666;
+        }
+
+        .login-overlay-actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .login-overlay-actions .btn {
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            text-decoration: none;
+        }
+
+        /* Personalization Settings Section - Fixed Sidebar */
+        .personalization-sidebar {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            max-width: 200px;
+            transition: left 0.3s ease;
+        }
+
+        .personalization-sidebar.sidebar-initializing {
+            transition: none !important;
+            visibility: hidden;
+        }
+
+        .personalization-sidebar.collapsed {
+            left: -200px;
+        }
+
+        .personalization-sidebar.collapsed .sidebar-toggle {
+            transform: rotate(180deg);
+        }
+
+        /* Expand tab - visible when sidebar is collapsed */
+        .sidebar-expand-tab {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 12px;
+            border-radius: 0 12px 12px 0;
+            cursor: pointer;
+            z-index: 999;
+            box-shadow: 3px 0 15px rgba(102, 126, 234, 0.4);
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-size: 14px;
+            font-weight: 700;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .sidebar-expand-tab.sidebar-initializing {
+            transition: none !important;
+            animation: none !important;
+            visibility: hidden;
+        }
+
+        .sidebar-expand-tab:hover {
+            background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+            transform: translateY(-50%) translateX(3px);
+            box-shadow: 5px 0 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .sidebar-expand-tab.visible {
+            opacity: 1;
+            pointer-events: auto;
+            animation: pulseTab 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseTab {
+            0%, 100% {
+                box-shadow: 3px 0 15px rgba(102, 126, 234, 0.4);
+            }
+            50% {
+                box-shadow: 5px 0 25px rgba(102, 126, 234, 0.7);
+            }
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.1);
+            border-radius: 0 8px 0 0;
+        }
+
+        .sidebar-header:hover {
+            background: rgba(0,0,0,0.2);
+        }
+
+        .sidebar-title {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .sidebar-toggle {
+            font-size: 10px;
+            opacity: 0.8;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-content {
+            padding: 12px;
+        }
+
+        .sidebar-badges {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .sidebar-badge {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .badge-label {
+            opacity: 0.8;
+            font-size: 10px;
+        }
+
+        .sidebar-params {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-bottom: 10px;
+        }
+
+        .sidebar-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .sidebar-buttons .btn {
+            width: 100%;
+            font-size: 12px;
+            padding: 6px 10px;
+        }
+
+        .params-inline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        /* Keep old styles for backwards compatibility */
+        .personalization-section-compact {
+            display: none;
+        }
+
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .settings-left {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .settings-title {
+            font-weight: 600;
+            font-size: 15px;
+            white-space: nowrap;
+        }
+
+        .settings-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .setting-badge {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .setting-badge strong {
+            opacity: 0.85;
+            font-weight: 500;
+        }
+
+        .settings-params-inline {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .params-label-inline {
+            font-size: 12px;
+            opacity: 0.85;
+        }
+
+        .params-inline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .settings-right {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        /* Parameter badges for model params display */
+        .param-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            white-space: nowrap;
+        }
+
+        #modelParamsDisplay {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px !important;
+            font-size: 12px !important;
+        }
+
+        .settings-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        /* High contrast buttons for purple background */
+        .btn-settings-white {
+            background-color: white;
+            color: #5a4fcf;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-settings-white:hover {
+            background-color: #f0f0f0;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-settings-outline {
+            background-color: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-settings-outline:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        /* Rerun Query Section - Fixed position toast on the side */
+        .rerun-query-section {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            max-width: 320px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .rerun-query-content p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .rerun-query-content button {
+            margin-top: 10px;
+        }
+
+        .rerun-close-btn {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #856404;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .rerun-close-btn:hover {
+            color: #533f03;
+        }
+
+        /* Settings Modal */
+        .settings-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1500;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .settings-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 32px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close-modal:hover {
+            color: #333;
+        }
+
+        .settings-modal-content h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .settings-form {
+            margin-top: 20px;
+        }
+
+        .params-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .param-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .param-item label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .param-item input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        #feedbackDescription {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Personalization Settings</h2>
+                <span class="close" onclick="closeSettings()">&times;</span>
+            </div>
+            <form class="settings-form" onsubmit="saveSettings(event)">
+                <div class="form-group">
+                    <label for="model_name">Metric Learning Model:</label>
+                    <select id="model_name" name="model_name">
+                        <option value="OASIS">OASIS</option>
+                        <option value="OMDML">OMDML</option>
+                        <option value="SORS">SORS</option>
+                        <option value="AdaSORS">AdaSORS</option>
+                        <option value="RobustODML">RobustODML</option>
+                        <option value="FactoredAROMA">FactoredAROMA (AROMA)</option>
+                        <option value="OPML">OPML</option>
+                        <option value="MLOML">MLOML</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Current Settings:</label>
+                    <p id="current_settings" style="color: #666; font-size: 14px;">Loading...</p>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Settings</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const sessionId = '{{ session_id }}';
+        const csrfToken = '{{ csrf_token }}';
+        const serveImageUrlTemplate = "{% url 'serve_image' image_path='__IMAGE_PATH__' %}";
+        const feedbackApplyStatusUrlTemplate = "{% url 'feedback_apply_job_status' '00000000-0000-0000-0000-000000000000' %}";
+        let hasFeedback = false;
+        let availableSettings = null;
+        let availableSettingsPromise = null;
+        let currentSettingsCache = null;
+        const initialProgressivePending = {% if results and results.progressive_pending %}true{% else %}false{% endif %};
+        const hasInitialResults = {% if results %}true{% else %}false{% endif %};
+        let progressiveFetchInFlight = false;
+        let feedbackApplyPromise = null;
+        let resultsDeliveredAtPerfMs = null;
+
+        function markResultsDeliveredNow() {
+            try {
+                resultsDeliveredAtPerfMs = performance.now();
+            } catch (e) {
+                resultsDeliveredAtPerfMs = null;
+            }
+        }
+
+        function getClientThinkTimeMs() {
+            if (resultsDeliveredAtPerfMs === null) {
+                return null;
+            }
+            const delta = performance.now() - resultsDeliveredAtPerfMs;
+            if (!Number.isFinite(delta) || delta < 0) {
+                return null;
+            }
+            return delta;
+        }
+
+        function appendClientThinkTimeToFormData(formData) {
+            const deltaMs = getClientThinkTimeMs();
+            if (deltaMs === null) {
+                return;
+            }
+            formData.append('query_ranking_time_ms', deltaMs.toFixed(2));
+        }
+
+        function appendClientThinkTimeToHref(href) {
+            const deltaMs = getClientThinkTimeMs();
+            if (deltaMs === null || !href) {
+                return href;
+            }
+            try {
+                // Resolve relative links against current page URL to preserve script-name prefix
+                // (e.g. /demos/personalized-similarity-search) instead of jumping to domain root.
+                const url = new URL(href, window.location.href);
+                url.searchParams.set('query_ranking_time_ms', deltaMs.toFixed(2));
+                return `${url.pathname}${url.search}${url.hash}`;
+            } catch (e) {
+                return href;
+            }
+        }
+
+        // Loading overlay functions
+        function showLoading(message = 'Loading...') {
+            const overlay = document.getElementById('loadingOverlay');
+            const text = overlay.querySelector('.loading-text');
+            if (text) text.textContent = message;
+            overlay.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.display = 'none';
+        }
+
+        async function parseJsonResponse(response) {
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                const text = await response.text();
+                throw new Error(`HTTP ${response.status}: ${text.slice(0, 300)}`);
+            }
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || `HTTP ${response.status}`);
+            }
+            return data;
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => window.setTimeout(resolve, ms));
+        }
+
+        function feedbackApplyStatusUrl(jobId) {
+            return feedbackApplyStatusUrlTemplate.replace(
+                '00000000-0000-0000-0000-000000000000',
+                encodeURIComponent(jobId)
+            );
+        }
+
+        async function pollFeedbackApplyJob(jobId, options = {}) {
+            const pollEveryMs = options.pollEveryMs || 1500;
+            const startedAt = Date.now();
+            let transientFailures = 0;
+
+            while (true) {
+                try {
+                    const data = await fetch(feedbackApplyStatusUrl(jobId), {
+                        cache: 'no-store'
+                    }).then(parseJsonResponse);
+                    transientFailures = 0;
+
+                    if (data.status === 'completed') {
+                        return data;
+                    }
+                    if (data.status === 'failed') {
+                        const failedError = new Error(data.error || 'Feedback application failed');
+                        failedError.permanent = true;
+                        throw failedError;
+                    }
+
+                    if (options.runningMessage) {
+                        const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+                        const suffix = elapsedSeconds >= 10 ? ` (${elapsedSeconds}s)` : '';
+                        showLoading(`${options.runningMessage}${suffix}`);
+                    }
+                } catch (error) {
+                    if (error && error.permanent) {
+                        throw error;
+                    }
+                    transientFailures += 1;
+                    if (transientFailures >= 8) {
+                        throw error;
+                    }
+                    showLoading('Applying feedback... reconnecting to status check');
+                }
+
+                await sleep(pollEveryMs);
+            }
+        }
+
+        async function applyFeedbackLearning(options = {}) {
+            if (feedbackApplyPromise) {
+                return feedbackApplyPromise;
+            }
+
+            feedbackApplyPromise = (async () => {
+                showLoading(options.startMessage || 'Applying feedback...');
+
+                const formData = new FormData();
+                formData.append('session_id', sessionId);
+                formData.append('async', '1');
+                formData.append('csrfmiddlewaretoken', csrfToken);
+
+                const data = await fetch('{% url "apply_feedback_learning" %}', {
+                    method: 'POST',
+                    body: formData
+                }).then(parseJsonResponse);
+
+                if (data.job_id) {
+                    return pollFeedbackApplyJob(data.job_id, {
+                        runningMessage: options.runningMessage || 'Applying feedback...',
+                        pollEveryMs: options.pollEveryMs
+                    });
+                }
+
+                return data;
+            })();
+
+            try {
+                return await feedbackApplyPromise;
+            } finally {
+                feedbackApplyPromise = null;
+            }
+        }
+
+        // Load current settings on page load
+        {% if user_logged_in %}
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCurrentSettings();
+            // Warm up static settings payload in background for faster "Change Settings" open.
+            ensureAvailableSettings().catch(error => {
+                console.error('Error preloading available settings:', error);
+            });
+        });
+        {% endif %}
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // For server-rendered results page, ranking think-time starts when page is shown.
+            if (hasInitialResults) {
+                markResultsDeliveredNow();
+            }
+
+            // For text + upload search forms, append client-side think time.
+            document.querySelectorAll('form.search-form').forEach(form => {
+                form.addEventListener('submit', function() {
+                    const deltaMs = getClientThinkTimeMs();
+                    if (deltaMs === null) {
+                        return;
+                    }
+                    let hidden = form.querySelector('input[name="query_ranking_time_ms"]');
+                    if (!hidden) {
+                        hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.name = 'query_ranking_time_ms';
+                        form.appendChild(hidden);
+                    }
+                    hidden.value = deltaMs.toFixed(2);
+                });
+            });
+
+            // For image-click queries, append client-side think time into the URL.
+            document.addEventListener('click', function(event) {
+                const link = event.target.closest('a.image-link');
+                if (!link) {
+                    return;
+                }
+                const currentHref = link.getAttribute('href') || link.href;
+                const updatedHref = appendClientThinkTimeToHref(currentHref);
+                if (updatedHref && updatedHref !== currentHref) {
+                    link.setAttribute('href', updatedHref);
+                }
+            });
+        });
+
+        // Close login overlay and remember the choice for this session
+        function closeLoginOverlay() {
+            document.getElementById('loginOverlay').style.display = 'none';
+            sessionStorage.setItem('loginOverlayDismissed', 'true');
+        }
+
+        function ensureAvailableSettings() {
+            if (availableSettings) {
+                return Promise.resolve(availableSettings);
+            }
+            if (availableSettingsPromise) {
+                return availableSettingsPromise;
+            }
+            availableSettingsPromise = fetch('{% url "get_available_settings" %}')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        throw new Error(data.error || 'Failed to load available settings');
+                    }
+                    availableSettings = data;
+                    return availableSettings;
+                })
+                .finally(() => {
+                    availableSettingsPromise = null;
+                });
+            return availableSettingsPromise;
+        }
+
+        // Load and display current settings
+        function loadCurrentSettings() {
+            ensureAvailableSettings()
+            .then(availableData =>
+                fetch('{% url "get_learning_settings" %}')
+                .then(response => response.json())
+                .then(data => ({ availableData, data }))
+            )
+            .then(({ availableData, data }) => {
+                if (data.success) {
+                    const settings = data.settings;
+                    currentSettingsCache = settings;
+                    document.getElementById('scalingFactorDisplay').textContent = settings.scaling_factor.toFixed(4);
+                    document.getElementById('modelNameDisplay').textContent = settings.model_name;
+                    document.getElementById('feedbackTypeDisplay').textContent = getFeedbackTypeName(settings.feedback_type);
+
+                    // Get model params - use defaults if empty
+                    let params = settings.model_params;
+                    if (!params || Object.keys(params).length === 0) {
+                        // Get default params from available settings
+                        if (availableData.models[settings.model_name]) {
+                            const modelInfo = availableData.models[settings.model_name];
+                            const feedbackTypeInfo = modelInfo.feedback_types[settings.feedback_type];
+                            if (feedbackTypeInfo) {
+                                params = feedbackTypeInfo.default_params;
+                            }
+                        }
+                    }
+
+                    // Format model params as readable list
+                    document.getElementById('modelParamsDisplay').innerHTML = formatParamsDisplay(params);
+
+                    // Format feedback params
+                    const feedbackParams = settings.feedback_params;
+                    document.getElementById('feedbackParamsDisplay').innerHTML = formatParamsDisplay(feedbackParams);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading settings:', error);
+            });
+        }
+
+        // Format parameters as a readable inline list
+        function formatParamsDisplay(params) {
+            if (!params || Object.keys(params).length === 0) {
+                return '<span style="opacity: 0.7; font-style: italic;">No parameters</span>';
+            }
+
+            let html = '';
+            for (const [key, value] of Object.entries(params)) {
+                const displayValue = formatParamValue(value);
+                html += `<span class="param-badge">${key}: ${displayValue}</span>`;
+            }
+            return html;
+        }
+
+        // Format parameter value for display
+        function formatParamValue(value) {
+            if (typeof value === 'number') {
+                if (Number.isInteger(value)) return value.toString();
+                if (Math.abs(value) < 0.001 || Math.abs(value) >= 10000) {
+                    return value.toExponential(2).replace(/\.?0+e/i, 'e');
+                }
+                const rounded = value.toFixed(4).replace(/\.?0+$/, '');
+                return rounded === '-0' ? '0' : rounded;
+            }
+            return value;
+        }
+
+        function getFeedbackTypeName(type) {
+            const names = {1: 'Type 1 — Random Pairing', 2: 'Type 2 — Single Neg & All Pos', 3: 'Type 3 — All Possible Pairs'};
+            return names[type] || 'Type ' + type;
+        }
+
+        // Open settings modal
+        let currentModelParams = {};
+        let initialModelName = null;
+        let initialFeedbackType = null;
+        let modelSelectionChanged = false;
+        function openSettingsModal() {
+            ensureAvailableSettings()
+            .then(() => {
+                showSettingsModal();
+            })
+            .catch(error => {
+                console.error('Error loading available settings:', error);
+                alert('Error loading settings');
+            });
+        }
+
+        function showSettingsModal() {
+            // Create modal HTML
+            const modal = document.createElement('div');
+            modal.id = 'settingsModal';
+            modal.className = 'settings-modal';
+            modal.innerHTML = `
+                <div class="settings-modal-content">
+                    <span class="close-modal" onclick="closeSettingsModal()">&times;</span>
+                    <h2>⚙️ Personalization Settings</h2>
+
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label><strong>Scaling Factor:</strong></label>
+                            <p id="modalScalingFactor" style="margin:4px 0 0; font-size:15px; font-weight:600; color:#333;">...</p>
+                            <small style="display:block; margin-top:4px; color:#666;">The scaling factor of your personalised matrix determines the enlargement of the candidate set. Higher the scaling factor, higher the candidate set and therefore longer time for personalized search. A value of 1.0 means no personalisation (an identity matrix).</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="feedbackTypeSelect"><strong>Feedback Type:</strong></label>
+                            <select id="feedbackTypeSelect" onchange="updateFeedbackSettings()">
+                                <option value="1">1 — Random Pairing</option>
+                                <option value="2">2 — Single Negative &amp; All Positives</option>
+                                <option value="3">3 — All Possible Pairs</option>
+                            </select>
+                            <small id="feedbackDescription" style="display:block; margin-top:5px; color:#666; font-style:italic;"></small>
+                        </div>
+
+                        <div class="form-group" id="feedbackParamsGroup">
+                            <label><strong>Feedback Parameters:</strong></label>
+                            <div id="feedbackParamsEdit"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="modelSelect"><strong>Model:</strong></label>
+                            <select id="modelSelect" onchange="onModelSelectionChanged()">
+                                ${Object.keys(availableSettings.models).map(model =>
+                                    `<option value="${model}">${model}</option>`
+                                ).join('')}
+                            </select>
+                            <div id="modelDescription" style="margin-top:8px; padding:10px 12px; background:#f8f9fa; border-radius:6px; border-left:3px solid #667eea; font-size:13px; color:#444;"></div>
+                            <div id="modelCitation" style="margin-top:6px; padding:8px 12px; background:#fafafa; border-radius:4px; font-size:12px; color:#666;"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label><strong>Model Parameters:</strong></label>
+                            <div id="modelParamsEdit"></div>
+                        </div>
+
+                        <div class="settings-actions">
+                            <button onclick="saveSettingsModal()" class="btn btn-primary">💾 Save Settings</button>
+                            <button onclick="closeSettingsModal()" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            modelSelectionChanged = false;
+
+            // Populate immediately from cached settings if available.
+            if (currentSettingsCache) {
+                populateSettingsModalFromSettings(currentSettingsCache);
+            }
+
+            // Always refresh from server in background.
+            fetch('{% url "get_learning_settings" %}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentSettingsCache = data.settings;
+                        populateSettingsModalFromSettings(currentSettingsCache);
+                    }
+                });
+        }
+
+        function populateSettingsModalFromSettings(settings) {
+            const feedbackTypeSelect = document.getElementById('feedbackTypeSelect');
+            const modelSelect = document.getElementById('modelSelect');
+            const scalingFactorEl = document.getElementById('modalScalingFactor');
+            if (!feedbackTypeSelect || !modelSelect || !scalingFactorEl) {
+                return;
+            }
+            feedbackTypeSelect.value = settings.feedback_type;
+            modelSelect.value = settings.model_name;
+            scalingFactorEl.textContent = settings.scaling_factor.toFixed(4);
+
+            currentFeedbackParams = settings.feedback_params || {};
+            currentModelParams = settings.model_params || {};
+            initialModelName = settings.model_name;
+            initialFeedbackType = String(settings.feedback_type);
+            updateModelSettings();
+            updateFeedbackParamsUI();
+        }
+
+        function updateModelSettings() {
+            const modelName = document.getElementById('modelSelect').value;
+            const feedbackType = document.getElementById('feedbackTypeSelect').value;
+
+            const modelInfo = availableSettings.models[modelName];
+            const feedbackTypeInfo = modelInfo.feedback_types[feedbackType];
+
+            if (!feedbackTypeInfo) {
+                // Select first available feedback type
+                const firstType = Object.keys(modelInfo.feedback_types)[0];
+                document.getElementById('feedbackTypeSelect').value = firstType;
+                updateFeedbackSettings();
+                return;
+            }
+
+            updateFeedbackSettings();
+        }
+
+        // Track current feedback params from user settings
+        let currentFeedbackParams = {};
+
+        function updateFeedbackSettings() {
+            const modelName = document.getElementById('modelSelect').value;
+            const feedbackType = document.getElementById('feedbackTypeSelect').value;
+
+            const modelInfo = availableSettings.models[modelName];
+            const feedbackTypeInfo = modelInfo.feedback_types[feedbackType];
+
+            if (!feedbackTypeInfo) {
+                document.getElementById('modelParamsEdit').innerHTML = '<p style="color:#999; font-style:italic;">This feedback type is not available for this model.</p>';
+                return;
+            }
+
+            document.getElementById('feedbackDescription').textContent = feedbackTypeInfo.description;
+
+            // Update model description and citation
+            const descEl = document.getElementById('modelDescription');
+            const citeEl = document.getElementById('modelCitation');
+            if (descEl) {
+                descEl.innerHTML = modelInfo.description
+                    ? `<span style="color:#333;">${modelInfo.description}</span>`
+                    : '';
+            }
+            if (citeEl) {
+                citeEl.innerHTML = modelInfo.citation
+                    ? `<strong>Publication:</strong> ${modelInfo.citation}`
+                    : '';
+            }
+
+            // Display editable model parameters with descriptions.
+            // Use saved custom params only for the currently saved model/type;
+            // when user switches model/type, defaults are expected.
+            const params = feedbackTypeInfo.default_params;
+            const paramDescs = modelInfo.param_descriptions || {};
+            const useSavedModelParams = (
+                !modelSelectionChanged &&
+                modelName === initialModelName &&
+                String(feedbackType) === String(initialFeedbackType)
+            );
+            let paramsHTML = '<div class="params-grid">';
+            for (const [key, value] of Object.entries(params)) {
+                const paramValue = (useSavedModelParams && Object.prototype.hasOwnProperty.call(currentModelParams, key))
+                    ? currentModelParams[key]
+                    : value;
+                const desc = paramDescs[key] || '';
+                paramsHTML += `
+                    <div class="param-item">
+                        <label>${key}:</label>
+                        <input type="text" id="param_${key}" value="${paramValue}" />
+                        ${desc ? `<small style="color:#666; font-size:12px; margin-top:4px;">${desc}</small>` : ''}
+                    </div>
+                `;
+            }
+            paramsHTML += '</div>';
+            document.getElementById('modelParamsEdit').innerHTML = paramsHTML;
+
+            // Update feedback params UI
+            updateFeedbackParamsUI();
+        }
+
+        function onModelSelectionChanged() {
+            modelSelectionChanged = true;
+            updateModelSettings();
+        }
+
+        function updateFeedbackParamsUI() {
+            const feedbackType = document.getElementById('feedbackTypeSelect').value;
+            const feedbackParamsInfo = availableSettings.feedback_type_params ? availableSettings.feedback_type_params[feedbackType] : null;
+            const feedbackParamsGroup = document.getElementById('feedbackParamsGroup');
+            const feedbackParamsEdit = document.getElementById('feedbackParamsEdit');
+
+            if (!feedbackParamsInfo || Object.keys(feedbackParamsInfo).length === 0) {
+                feedbackParamsGroup.style.display = 'none';
+                feedbackParamsEdit.innerHTML = '';
+                return;
+            }
+
+            feedbackParamsGroup.style.display = 'block';
+            let html = '<div class="params-grid">';
+            for (const [paramName, paramInfo] of Object.entries(feedbackParamsInfo)) {
+                // Use saved value if available, otherwise use default
+                const savedValue = currentFeedbackParams.hasOwnProperty(paramName)
+                    ? currentFeedbackParams[paramName]
+                    : paramInfo.default;
+
+                if (paramInfo.type === 'bool') {
+                    html += `
+                        <div class="param-item">
+                            <label>${paramName}:</label>
+                            <select id="fbparam_${paramName}">
+                                <option value="true" ${savedValue === true ? 'selected' : ''}>True</option>
+                                <option value="false" ${savedValue === false ? 'selected' : ''}>False</option>
+                            </select>
+                            <small style="color:#666; font-size:12px; margin-top:4px;">${paramInfo.description}</small>
+                        </div>
+                    `;
+                } else if (paramInfo.allowed_values && paramInfo.type === 'int') {
+                    html += `
+                        <div class="param-item">
+                            <label>${paramName}:</label>
+                            <select id="fbparam_${paramName}">
+                                ${paramInfo.allowed_values.map(v =>
+                                    `<option value="${v}" ${v == savedValue ? 'selected' : ''}>${v}</option>`
+                                ).join('')}
+                            </select>
+                            <small style="color:#666; font-size:12px; margin-top:4px;">${paramInfo.description}</small>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="param-item">
+                            <label>${paramName}:</label>
+                            <input type="text" id="fbparam_${paramName}" value="${savedValue}" />
+                            <small style="color:#666; font-size:12px; margin-top:4px;">${paramInfo.description}</small>
+                        </div>
+                    `;
+                }
+            }
+            html += '</div>';
+            feedbackParamsEdit.innerHTML = html;
+        }
+
+        function saveSettingsModal() {
+            const modelName = document.getElementById('modelSelect').value;
+            const feedbackType = document.getElementById('feedbackTypeSelect').value;
+
+            // Collect model parameters
+            const params = {};
+            const paramInputs = document.querySelectorAll('[id^="param_"]');
+            paramInputs.forEach(input => {
+                const key = input.id.replace('param_', '');
+                let value = input.value;
+                // Try to parse as number
+                if (!isNaN(value)) {
+                    value = parseFloat(value);
+                }
+                params[key] = value;
+            });
+
+            // Collect feedback parameters
+            const feedbackParams = {};
+            const feedbackParamsInfo = availableSettings.feedback_type_params
+                ? (availableSettings.feedback_type_params[feedbackType] || {})
+                : {};
+            Object.keys(feedbackParamsInfo).forEach(key => {
+                const input = document.getElementById(`fbparam_${key}`);
+                if (!input) return;
+                let value = input.value;
+                if (value === 'true') value = true;
+                else if (value === 'false') value = false;
+                else if (!isNaN(value)) value = parseFloat(value);
+                feedbackParams[key] = value;
+            });
+
+            showLoading('Saving settings...');
+
+            const formData = new FormData();
+            formData.append('model_name', modelName);
+            formData.append('feedback_type', feedbackType);
+            formData.append('model_params', JSON.stringify(params));
+            formData.append('feedback_params', JSON.stringify(feedbackParams));
+            formData.append('csrfmiddlewaretoken', csrfToken);
+
+            fetch('{% url "update_learning_settings" %}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    closeSettingsModal();
+                    loadCurrentSettings();
+                } else {
+                    alert('Error updating settings: ' + data.error);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                alert('Error updating settings');
+            });
+        }
+
+        function closeSettingsModal() {
+            const modal = document.getElementById('settingsModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Provide feedback on an image
+        function provideFeedback(event, imageIndex, imageName, feedbackType) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const imageItem = document.querySelector(`[data-image-index="${imageIndex}"]`);
+            const likeBtn = imageItem.querySelector('.like-btn');
+            const dislikeBtn = imageItem.querySelector('.dislike-btn');
+
+            // Toggle feedback state
+            if (feedbackType === 'positive') {
+                if (likeBtn.classList.contains('active')) {
+                    // Remove feedback
+                    likeBtn.classList.remove('active');
+                    return;
+                }
+                likeBtn.classList.add('active');
+                dislikeBtn.classList.remove('active');
+            } else {
+                if (dislikeBtn.classList.contains('active')) {
+                    // Remove feedback
+                    dislikeBtn.classList.remove('active');
+                    return;
+                }
+                dislikeBtn.classList.add('active');
+                likeBtn.classList.remove('active');
+            }
+
+            // Save feedback to server
+            const formData = new FormData();
+            formData.append('image_index', imageIndex);
+            formData.append('image_name', imageName);
+            formData.append('feedback_type', feedbackType);
+            formData.append('session_id', sessionId);
+            formData.append('query_type', '{{ results.query_type }}');
+            formData.append('query_text', '{{ results.query_text|default:"" }}');
+            {% if results.anchor_index %}
+            formData.append('query_image_index', '{{ results.anchor_index }}');
+            {% endif %}
+            formData.append('csrfmiddlewaretoken', csrfToken);
+
+            fetch('{% url "save_feedback" %}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(async response => {
+                const contentType = response.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${text.slice(0, 300)}`);
+                }
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || `HTTP ${response.status}`);
+                }
+                return data;
+            })
+            .then(data => {
+                if (data.success) {
+                    console.log('Feedback saved:', data.message);
+                    hasFeedback = true;
+                    // Show rerun query section
+                    document.getElementById('rerunQuerySection').style.display = 'block';
+                } else {
+                    alert('Error saving feedback: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving feedback: ' + (error?.message || error));
+            });
+        }
+
+        // Rerun query with feedback
+        function rerunQueryWithFeedback() {
+            const flowStartTime = performance.now();
+
+            applyFeedbackLearning({
+                startMessage: 'Applying feedback and rerunning query...',
+                runningMessage: 'Applying feedback before rerun...'
+            })
+            .then(data => {
+                if (data.success) {
+                    console.log('Feedback applied, rerunning query...');
+                    // Now rerun the query
+                    return rerunQuery(
+                        flowStartTime,
+                        data.feedback_processing_matrix_save_ms,
+                        data.model_learning_ms,
+                        data.feedback_search_id
+                    );
+                } else {
+                    throw new Error(data.error);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                alert('Error applying feedback: ' + (error?.message || error));
+            });
+        }
+
+        function rerunQuery(flowStartTime, feedbackProcessingMatrixSaveMs, modelLearningMs, feedbackSearchId) {
+            showLoading('Searching with updated preferences...');
+
+            const formData = new FormData();
+            formData.append('session_id', sessionId);
+            formData.append('num_results', {{ num_results }});
+            formData.append('metric', '{{ distance_metric }}');
+            if (feedbackSearchId) {
+                formData.append('feedback_search_id', feedbackSearchId);
+            }
+            if (flowStartTime) {
+                formData.append('total_flow_time_ms', (performance.now() - flowStartTime).toFixed(2));
+            }
+            if (feedbackProcessingMatrixSaveMs !== undefined && feedbackProcessingMatrixSaveMs !== null) {
+                formData.append('feedback_processing_matrix_save_ms', String(feedbackProcessingMatrixSaveMs));
+            }
+            if (modelLearningMs !== undefined && modelLearningMs !== null) {
+                formData.append('model_learning_ms', String(modelLearningMs));
+            }
+            appendClientThinkTimeToFormData(formData);
+            formData.append('csrfmiddlewaretoken', csrfToken);
+
+            fetch('{% url "rerun_query" %}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    // Update results without full page refresh
+                    updateResultsDisplay(data.results);
+                    if (data.results && data.results.progressive_pending) {
+                        fetchProgressiveFullResults({
+                            force: true,
+                            numResults: {{ num_results|default:20 }},
+                            metric: '{{ distance_metric|default:"cosine" }}',
+                            feedbackSearchId: feedbackSearchId || null
+                        });
+                    }
+                    // Hide rerun section
+                    document.getElementById('rerunQuerySection').style.display = 'none';
+                    hasFeedback = false;
+                    // Update settings display
+                    loadCurrentSettings();
+                } else {
+                    alert('Error rerunning query: ' + data.error);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                alert('Error rerunning query');
+            });
+        }
+
+        function formatIndexName(metric, baseMetric = null) {
+            const value = (metric || '').toString().toLowerCase();
+            const baseValue = (baseMetric || '').toString().toLowerCase();
+            if (value === 'cosine') return 'Inner Product';
+            if (value === 'euclidean') return 'Euclidean';
+            if (value === 'dot_product') return 'Inner Product';
+            if (value === 'mahalanobis') {
+                if (baseValue === 'cosine' || baseValue === 'dot_product') {
+                    return 'Inner Product + Mahalanobis rerank';
+                }
+                if (baseValue === 'euclidean') {
+                    return 'Euclidean + Mahalanobis rerank';
+                }
+                return 'Mahalanobis rerank';
+            }
+            if (!value) return '';
+            return value.charAt(0).toUpperCase() + value.slice(1);
+        }
+
+        function buildImageUrl(imageName) {
+            const encodedPath = String(imageName || '')
+                .split('/')
+                .map(part => encodeURIComponent(part))
+                .join('/');
+            return serveImageUrlTemplate.replace('__IMAGE_PATH__', encodedPath);
+        }
+
+        function buildRankChangeHtml(result) {
+            const currentRank = Number(result.current_rank);
+            if (!Number.isFinite(currentRank) || currentRank <= 0) {
+                return '';
+            }
+
+            const direction = String(result.rank_change_direction || 'same').toLowerCase();
+            const absChange = Number(result.rank_change_abs);
+            let movementText = 'No change';
+            let movementClass = 'same';
+
+            if (direction === 'improved' && Number.isFinite(absChange) && absChange > 0) {
+                movementText = `Improved by ${absChange}`;
+                movementClass = 'improved';
+            } else if (direction === 'worsened' && Number.isFinite(absChange) && absChange > 0) {
+                movementText = `Worsened by ${absChange}`;
+                movementClass = 'worsened';
+            } else if (direction === 'new') {
+                movementText = 'New in results';
+                movementClass = 'new';
+            }
+
+            return `
+                <p class="rank-change rank-change-${movementClass}">
+                    <span class="rank-label">Rank #${currentRank}</span>
+                    <span class="rank-separator">·</span>
+                    <span class="rank-movement">${movementText}</span>
+                </p>
+            `;
+        }
+
+        function syncResultCardMeta(itemNode, result) {
+            if (!itemNode || !result) return;
+
+            const distanceNode = itemNode.querySelector('.distance');
+            if (distanceNode && Number.isFinite(Number(result.distance))) {
+                distanceNode.textContent = `Distance: ${Number(result.distance).toFixed(5)}`;
+            }
+
+            const imageInfo = itemNode.querySelector('.image-info');
+            if (!imageInfo) return;
+
+            const currentRankNode = itemNode.querySelector('.rank-change');
+            const rankHtml = buildRankChangeHtml(result);
+            if (!rankHtml) {
+                if (currentRankNode) {
+                    currentRankNode.remove();
+                }
+                return;
+            }
+
+            if (currentRankNode) {
+                currentRankNode.outerHTML = rankHtml;
+                return;
+            }
+
+            if (distanceNode) {
+                distanceNode.insertAdjacentHTML('afterend', rankHtml);
+            } else {
+                imageInfo.insertAdjacentHTML('afterbegin', rankHtml);
+            }
+        }
+
+        function buildResultCard(result) {
+            const imageItem = document.createElement('div');
+            imageItem.className = 'image-item';
+            imageItem.setAttribute('data-image-index', result.index);
+            imageItem.setAttribute('data-image-name', result.image_name);
+
+            imageItem.innerHTML = `
+                <a href="{% url 'home' %}?image_index=${result.index}&metric={{ distance_metric|default:'cosine' }}&num_results={{ num_results|default:20 }}" class="image-link">
+                    <img src="${buildImageUrl(result.image_name)}" alt="${result.image_name}" loading="lazy">
+                </a>
+                <div class="image-info">
+                    <p class="distance">Distance: ${result.distance.toFixed(5)}</p>
+                    ${buildRankChangeHtml(result)}
+                    {% if user_logged_in %}
+                    <div class="feedback-buttons">
+                        <button class="feedback-btn like-btn" onclick="provideFeedback(event, ${result.index}, '${result.image_name}', 'positive')" title="Mark as relevant">
+                            👍
+                        </button>
+                        <button class="feedback-btn dislike-btn" onclick="provideFeedback(event, ${result.index}, '${result.image_name}', 'negative')" title="Mark as irrelevant">
+                            👎
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            `;
+            return imageItem;
+        }
+
+        function reorderGridWithAnimation(imageGrid, orderedItems, previousRects) {
+            if (!imageGrid || !orderedItems || orderedItems.length === 0) {
+                return;
+            }
+
+            // Apply new DOM order first.
+            orderedItems.forEach(item => imageGrid.appendChild(item));
+
+            const nextRects = new Map();
+            orderedItems.forEach(item => {
+                nextRects.set(item.getAttribute('data-image-index'), item.getBoundingClientRect());
+            });
+
+            orderedItems.forEach(item => {
+                const key = item.getAttribute('data-image-index');
+                const prev = previousRects.get(key);
+                const next = nextRects.get(key);
+
+                if (!next) return;
+
+                // New item: quick fade-in
+                if (!prev) {
+                    item.style.opacity = '0';
+                    item.style.transition = 'opacity 220ms ease-out';
+                    requestAnimationFrame(() => {
+                        item.style.opacity = '1';
+                    });
+                    window.setTimeout(() => {
+                        item.style.transition = '';
+                        item.style.opacity = '';
+                    }, 260);
+                    return;
+                }
+
+                const dx = prev.left - next.left;
+                const dy = prev.top - next.top;
+                if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+
+                item.style.transform = `translate(${dx}px, ${dy}px)`;
+                item.style.transition = 'transform 320ms cubic-bezier(0.2, 0.7, 0.2, 1)';
+                requestAnimationFrame(() => {
+                    item.style.transform = '';
+                });
+                window.setTimeout(() => {
+                    item.style.transition = '';
+                    item.style.transform = '';
+                }, 360);
+            });
+        }
+
+        function updateResultsDisplay(results, options = {}) {
+            // Update the results count
+            const resultsCount = document.getElementById('resultsCount');
+            if (resultsCount && results.results) {
+                resultsCount.textContent = results.results.length + ' results';
+            }
+
+            // Update the index badge
+            const resultsMetric = document.getElementById('resultsMetric');
+            if (resultsMetric) {
+                const metricLabel = formatIndexName(
+                    results.distance_metric || '{{ distance_metric|default:"cosine" }}',
+                    results.base_metric || '{{ distance_metric|default:"cosine" }}'
+                );
+                let label = `Index: ${metricLabel}`;
+                resultsMetric.textContent = label;
+            }
+
+            // Show/hide progressive loading note
+            let progressiveNote = document.getElementById('progressiveNote');
+            if (results.progressive_pending) {
+                if (!progressiveNote) {
+                    progressiveNote = document.createElement('span');
+                    progressiveNote.id = 'progressiveNote';
+                    progressiveNote.className = 'meta-progress-note';
+                    progressiveNote.textContent = '⏳ Loading full personalized results...';
+                    const meta = document.querySelector('.results-meta');
+                    if (meta) meta.appendChild(progressiveNote);
+                }
+            } else if (progressiveNote) {
+                progressiveNote.remove();
+            }
+
+            // Update the results grid with new results
+            const imageGrid = document.querySelector('.image-grid');
+            if (!imageGrid) return;
+
+            // Background progressive update: append only missing results and update distances in place.
+            if (options.background) {
+                const existingItems = new Map();
+                imageGrid.querySelectorAll('.image-item[data-image-index]').forEach(item => {
+                    existingItems.set(String(item.getAttribute('data-image-index')), item);
+                });
+
+                const previousRects = new Map();
+                imageGrid.querySelectorAll('.image-item[data-image-index]').forEach(item => {
+                    previousRects.set(String(item.getAttribute('data-image-index')), item.getBoundingClientRect());
+                });
+
+                const desiredKeys = new Set(results.results.map(result => String(result.index)));
+                existingItems.forEach((item, key) => {
+                    if (!desiredKeys.has(key)) {
+                        item.remove();
+                        previousRects.delete(key);
+                    }
+                });
+
+                const orderedItems = [];
+                results.results.forEach(result => {
+                    const key = String(result.index);
+                    let itemNode = existingItems.get(key);
+                    if (itemNode) {
+                        syncResultCardMeta(itemNode, result);
+                    } else {
+                        itemNode = buildResultCard(result);
+                    }
+                    orderedItems.push(itemNode);
+                });
+
+                reorderGridWithAnimation(imageGrid, orderedItems, previousRects);
+                return;
+            }
+
+            // Explicit rerun/manual refresh path: replace whole grid.
+            imageGrid.innerHTML = '';
+            results.results.forEach(result => {
+                imageGrid.appendChild(buildResultCard(result));
+            });
+
+            // Ranking think-time starts when these results are rendered.
+            markResultsDeliveredNow();
+        }
+
+        function fetchProgressiveFullResults(options = {}) {
+            const shouldFetch = options.force || initialProgressivePending;
+            if (!shouldFetch || progressiveFetchInFlight) {
+                return;
+            }
+            progressiveFetchInFlight = true;
+
+            const formData = new FormData();
+            formData.append('num_results', options.numResults || {{ num_results|default:20 }});
+            formData.append('metric', options.metric || '{{ distance_metric|default:"cosine" }}');
+            formData.append('background_only', '1');
+            formData.append('progressive_full', '1');
+            if (options.feedbackSearchId) {
+                formData.append('feedback_search_id', options.feedbackSearchId);
+            }
+            formData.append('csrfmiddlewaretoken', csrfToken);
+
+            fetch('{% url "rerun_query" %}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.results) {
+                    updateResultsDisplay(data.results, { background: true });
+                } else {
+                    console.warn('Background full-result fetch failed:', data.error || 'unknown error');
+                }
+            })
+            .catch(error => {
+                console.warn('Background full-result fetch error:', error);
+            })
+            .finally(() => {
+                progressiveFetchInFlight = false;
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (initialProgressivePending) {
+                fetchProgressiveFullResults();
+            }
+        });
+
+        // Apply feedback (called from dropdown or before search)
+        function applyFeedback() {
+            if (!confirm('Apply collected feedback to update your personalized metric matrix?')) {
+                return;
+            }
+
+            applyFeedbackLearning({
+                startMessage: 'Applying feedback...',
+                runningMessage: 'Applying feedback...'
+            })
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    alert('✓ Metric matrix updated successfully!\n\nYour next searches will use the personalized matrix.');
+                } else {
+                    alert('Error applying feedback: ' + data.error);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                alert('Error applying feedback: ' + (error?.message || error));
+            });
+        }
+
+        // Toggle personalization sidebar
+        function togglePersonalizationSidebar() {
+            const sidebar = document.getElementById('personalizationSettings');
+            const expandTab = document.querySelector('.sidebar-expand-tab');
+            if (sidebar) {
+                sidebar.classList.toggle('collapsed');
+                const isCollapsed = sidebar.classList.contains('collapsed');
+                // Toggle expand tab visibility
+                if (expandTab) {
+                    expandTab.classList.toggle('visible', isCollapsed);
+                }
+                // Save preference
+                localStorage.setItem('personalizationSidebarCollapsed', isCollapsed);
+            }
+        }
+
+        // Restore sidebar state on page load (open/closed persists across searches).
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('personalizationSettings');
+            const expandTab = document.querySelector('.sidebar-expand-tab');
+
+            if (!sidebar) {
+                return;
+            }
+
+            const savedPreference = localStorage.getItem('personalizationSidebarCollapsed');
+            const shouldCollapse = savedPreference !== 'false'; // default: collapsed
+
+            if (shouldCollapse) {
+                sidebar.classList.add('collapsed');
+                if (expandTab) expandTab.classList.add('visible');
+            } else {
+                sidebar.classList.remove('collapsed');
+                if (expandTab) expandTab.classList.remove('visible');
+            }
+        });
+
+        // Reset metric matrix to identity
+        function resetMatrix() {
+            if (!confirm('Reset your metric matrix to identity? This will remove all personalization.')) {
+                return;
+            }
+
+            showLoading('Resetting personalization...');
+
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', csrfToken);
+
+            fetch('{% url "reset_metric_matrix" %}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Avoid full page reload (expensive with many images); just refresh settings UI.
+                    currentSettingsCache = null;
+                    loadCurrentSettings();
+                    hasFeedback = false;
+                    const rerunSection = document.getElementById('rerunQuerySection');
+                    if (rerunSection) {
+                        rerunSection.style.display = 'none';
+                    }
+                    hideLoading();
+                } else {
+                    hideLoading();
+                    alert('Error resetting matrix: ' + data.error);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                alert('Error resetting matrix');
+            });
+        }
+
+        // Open settings modal
+        function openSettings() {
+            const modal = document.getElementById('settingsModal');
+            modal.style.display = 'block';
+
+            // Load current settings
+            fetch('{% url "get_learning_settings" %}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const settings = data.settings;
+                    document.getElementById('model_name').value = settings.model_name;
+                    document.getElementById('current_settings').textContent =
+                        `Model: ${settings.model_name}, Scaling Factor: ${settings.scaling_factor.toFixed(3)}, Last Updated: ${settings.last_updated || 'Never'}`;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading settings:', error);
+            });
+        }
+
+        // Close settings modal
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        // Save settings
+        function saveSettings(event) {
+            event.preventDefault();
+
+            showLoading('Saving settings...');
+
+            const formData = new FormData();
+            formData.append('model_name', document.getElementById('model_name').value);
+            formData.append('csrfmiddlewaretoken', csrfToken);
+
+            fetch('{% url "update_learning_settings" %}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    closeSettings();
+                } else {
+                    alert('Error updating settings: ' + data.error);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                alert('Error updating settings');
+            });
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('settingsModal');
+            if (event.target === modal) {
+                closeSettings();
+            }
+        }
+    </script>
+{% endblock %}

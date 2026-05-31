@@ -1,0 +1,15 @@
+{
+  "scaling_factor": 1.0312194790566138,
+  "model": "OPML",
+  "feedback_type": 2,
+  "feedback_type_name": "Single Negative & All Positives",
+  "model_params": {
+    "gamma": 0.0004
+  },
+  "feedback_params": {
+    "batch_mode": true
+  },
+  "distance_mode": "euclidean",
+  "updated_at": "2026-05-31T12:42:58.433124+00:00",
+  "dimension": 768
+}

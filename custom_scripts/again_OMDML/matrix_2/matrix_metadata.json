@@ -1,0 +1,15 @@
+{
+  "scaling_factor": 1.0553545357868774,
+  "model": "OMDML",
+  "feedback_type": 3,
+  "feedback_type_name": "All Possible Pairs",
+  "model_params": {
+    "beta": 0.001,
+    "C": 0.02,
+    "gamma": 0.007
+  },
+  "feedback_params": {},
+  "distance_mode": "euclidean",
+  "updated_at": "2026-05-31T12:31:53.386487+00:00",
+  "dimension": 768
+}
