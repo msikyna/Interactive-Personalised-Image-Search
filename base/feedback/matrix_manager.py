@@ -11,8 +11,9 @@ from .. import config
 from .constants import (
     MODEL_FEEDBACK_DEFAULTS,
     FEEDBACK_TYPE_PARAMS,
-    DEFAULT_MODEL,
-    DEFAULT_FEEDBACK_TYPE,
+    INITIAL_MODEL,
+    INITIAL_FEEDBACK_TYPE,
+    INITIAL_MODEL_HYPERPARAMETERS,
 )
 from .feedback_manager import FeedbackManager
 from .triplet_generator import TripletGenerator
@@ -52,9 +53,9 @@ class MatrixManager:
         user_matrix_obj = UserMetricMatrix(
             user=user,
             matrix_dimension=dim,
-            metric_learning_model=DEFAULT_MODEL,
-            model_hyperparameters=MatrixManager.get_default_params(DEFAULT_MODEL, DEFAULT_FEEDBACK_TYPE),
-            feedback_type=DEFAULT_FEEDBACK_TYPE,
+            metric_learning_model=INITIAL_MODEL,
+            model_hyperparameters=INITIAL_MODEL_HYPERPARAMETERS.copy(),
+            feedback_type=INITIAL_FEEDBACK_TYPE,
             feedback_hyperparameters={},
             scaling_factor=1.0,
         )

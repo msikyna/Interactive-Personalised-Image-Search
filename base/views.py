@@ -2105,16 +2105,20 @@ def get_learning_settings(request):
             }
         except UserMetricMatrix.DoesNotExist:
             # Return defaults
-            from .feedback import MatrixManager
-            from .feedback.constants import DEFAULT_MODEL, DEFAULT_FEEDBACK_TYPE, FEEDBACK_TYPE_PARAMS
+            from .feedback.constants import (
+                INITIAL_MODEL,
+                INITIAL_FEEDBACK_TYPE,
+                INITIAL_MODEL_HYPERPARAMETERS,
+                FEEDBACK_TYPE_PARAMS,
+            )
             default_feedback_params = {}
-            if DEFAULT_FEEDBACK_TYPE in FEEDBACK_TYPE_PARAMS:
-                for param_name, param_info in FEEDBACK_TYPE_PARAMS[DEFAULT_FEEDBACK_TYPE].items():
+            if INITIAL_FEEDBACK_TYPE in FEEDBACK_TYPE_PARAMS:
+                for param_name, param_info in FEEDBACK_TYPE_PARAMS[INITIAL_FEEDBACK_TYPE].items():
                     default_feedback_params[param_name] = param_info['default']
             settings = {
-                'model_name': DEFAULT_MODEL,
-                'model_params': MatrixManager.get_default_params(DEFAULT_MODEL, DEFAULT_FEEDBACK_TYPE),
-                'feedback_type': DEFAULT_FEEDBACK_TYPE,
+                'model_name': INITIAL_MODEL,
+                'model_params': INITIAL_MODEL_HYPERPARAMETERS.copy(),
+                'feedback_type': INITIAL_FEEDBACK_TYPE,
                 'feedback_params': default_feedback_params,
                 'scaling_factor': 1.0,
                 'last_updated': None

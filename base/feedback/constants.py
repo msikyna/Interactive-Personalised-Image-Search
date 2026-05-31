@@ -159,6 +159,11 @@ MODEL_PARAM_DESCRIPTIONS = {
 DEFAULT_MODEL = 'OMDML'
 DEFAULT_FEEDBACK_TYPE = 2  # Mechanism 2
 
+# Initial settings used only when creating/showing a user's first matrix.
+INITIAL_MODEL = 'OMDML'
+INITIAL_FEEDBACK_TYPE = 3  # Mechanism 3
+INITIAL_MODEL_HYPERPARAMETERS = {'beta': 1e-2, 'C': 4e-2, 'gamma': 7e-2}
+
 FEEDBACK_TYPE_NAMES = {
     1: 'Random Pairing',
     2: 'Single Negative & All Positives',
