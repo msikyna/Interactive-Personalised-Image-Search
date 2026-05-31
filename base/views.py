@@ -24,6 +24,25 @@ def _distance_mode_for_metric(distance_metric):
     return 'dot_product' if metric in ('cosine', 'dot_product') else 'euclidean'
 
 
+def _current_dataset_dimension(default=768):
+    try:
+        dataset = image_similarity_service.dataset
+        shape = getattr(dataset, 'shape', None)
+        if shape and len(shape) > 1:
+            return int(shape[1])
+    except Exception:
+        pass
+
+    try:
+        vector_dim = int(getattr(image_similarity_service, 'vector_dim', 0) or 0)
+        if vector_dim > 0:
+            return vector_dim
+    except Exception:
+        pass
+
+    return int(default)
+
+
 def _should_use_filter_refine(user_matrix_obj, scaling_factor):
     if user_matrix_obj is None:
         return False
@@ -482,7 +501,7 @@ def _maybe_reset_matrix_on_query_change(request, query_signature, previous_sessi
     except User.DoesNotExist:
         return False
 
-    dataset_dim = image_similarity_service.dataset.shape[1]
+    dataset_dim = _current_dataset_dimension()
     MatrixManager.reset_user_matrix(user, dataset_dim)
 
     # Drop pending linkage/feedback for previous query session.
@@ -1996,7 +2015,7 @@ def reset_metric_matrix(request):
 
     try:
         user = User.objects.get(id=user_id)
-        dataset_dim = image_similarity_service.dataset.shape[1]
+        dataset_dim = _current_dataset_dimension()
 
         MatrixManager.reset_user_matrix(user, dataset_dim)
 
@@ -2006,6 +2025,9 @@ def reset_metric_matrix(request):
         })
 
     except Exception as e:
+        import traceback
+        print("[ERROR] reset_metric_matrix failed", flush=True)
+        traceback.print_exc()
         return JsonResponse({'error': str(e)}, status=400)
 
 

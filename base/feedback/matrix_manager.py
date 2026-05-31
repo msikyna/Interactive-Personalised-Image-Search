@@ -360,8 +360,11 @@ class MatrixManager:
         """
         try:
             user_matrix_obj = UserMetricMatrix.objects.get(user=user)
-            user_matrix_obj.reset_to_identity()
-            store_cached_matrix_for_user_matrix(user_matrix_obj, np.eye(dimension))
+            identity = np.eye(int(dimension or user_matrix_obj.matrix_dimension))
+            user_matrix_obj.set_matrix(identity)
+            user_matrix_obj.scaling_factor = 1.0
+            user_matrix_obj.save()
+            store_cached_matrix_for_user_matrix(user_matrix_obj, identity)
         except UserMetricMatrix.DoesNotExist:
             user_matrix_obj = MatrixManager.create_default_user_matrix(user, dimension)
 

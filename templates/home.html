@@ -109,6 +109,7 @@
                                 <label for="metric_text" class="form-label-inline">Index</label>
                                 <select name="metric" id="metric_text" class="form-select-sm">
                                     <option value="cosine" {% if distance_metric == 'cosine' %}selected{% endif %}>Inner Product</option>
+                                    <option value="euclidean" {% if distance_metric == 'euclidean' %}selected{% endif %}>Euclidean</option>
                                 </select>
                             </div>
                             <div class="form-option-group">
@@ -130,6 +131,7 @@
                                 <label for="metric_image" class="form-label-inline">Index</label>
                                 <select name="metric" id="metric_image" class="form-select-sm">
                                     <option value="cosine" {% if distance_metric == 'cosine' %}selected{% endif %}>Inner Product</option>
+                                    <option value="euclidean" {% if distance_metric == 'euclidean' %}selected{% endif %}>Euclidean</option>
                                 </select>
                             </div>
                             <div class="form-option-group">
@@ -279,7 +281,7 @@
                     <div class="image-grid">
                         {% for image in random_images %}
                             <div class="image-item">
-                                <a href="{% url 'home' %}?image_index={{ image.index }}&metric=cosine&num_results=20" class="image-link">
+                                <a href="{% url 'home' %}?image_index={{ image.index }}&metric={{ distance_metric|default:'cosine' }}&num_results=20" class="image-link">
                                     <img src="{% url 'serve_image' image.image_name %}"
                                          alt="{{ image.image_name }}"
                                          loading="lazy"
@@ -2745,7 +2747,14 @@
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(async response => {
+                const contentType = response.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(text ? text.slice(0, 300) : `HTTP ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     // Avoid full page reload (expensive with many images); just refresh settings UI.
@@ -2765,7 +2774,7 @@
             .catch(error => {
                 hideLoading();
                 console.error('Error:', error);
-                alert('Error resetting matrix');
+                alert('Error resetting matrix: ' + error.message);
             });
         }
 

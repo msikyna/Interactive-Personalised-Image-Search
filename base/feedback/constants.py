@@ -33,7 +33,7 @@ MODEL_FEEDBACK_DEFAULTS = {
     },
     'OMDML': {
         1: {'beta': 7e-2, 'C': 1e-2, 'gamma': 1e-3},  # Mechanism 1
-        2: {'beta': 1e-2, 'C': 2e-2, 'gamma': 7e-2},  # Mechanism 2
+        2: {'beta': 1e-3, 'C': 4e-3, 'gamma': 7e-3},  # Mechanism 2
         3: {'beta': 1e-3, 'C': 4e-3, 'gamma': 7e-3},  # Mechanism 3 (same as Mechanism 2)
     },
     'SORS': {
