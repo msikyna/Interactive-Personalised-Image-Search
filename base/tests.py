@@ -44,12 +44,17 @@ class MahalanobisSearchApiTests(SimpleTestCase):
         vectors = np.asarray([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
 
         with (
-            patch.object(views.clip_service, 'text_to_vector', return_value=np.asarray([0.5, 0.5])),
+            patch.object(
+                views.clip_service,
+                'text_to_vector',
+                return_value=np.asarray([0.5, 0.5]),
+            ) as clip_mock,
             patch.object(self.service, 'search_by_vector', return_value=search_payload) as search_mock,
             patch.object(self.service, 'get_vectors_by_indices', return_value=vectors) as vectors_mock,
         ):
             response = self.post_json({
                 'query_text': 'red car',
+                'distance_metric': 'cosine',
                 'metric_matrix': [[1.0, 0.0], [0.0, 1.0]],
             })
 
@@ -59,16 +64,18 @@ class MahalanobisSearchApiTests(SimpleTestCase):
         self.assertEqual(body['requested_result_count'], 100)
         self.assertEqual(body['result_count'], 2)
         self.assertEqual(body['query']['embedding'], [0.5, 0.5])
-        self.assertEqual(body['query_embedding'], [0.5, 0.5])
-        self.assertEqual(body['query_embedding'], [0.5, 0.5])
+        self.assertNotIn('query_embedding', body)
+        self.assertEqual(body['metric']['candidate_distance_metric'], 'cosine')
         self.assertEqual([item['distance'] for item in body['results']], [0.2, 0.8])
         self.assertEqual([item['rank'] for item in body['results']], [1, 2])
         self.assertEqual([item['position'] for item in body['results']], [1, 2])
         self.assertEqual(body['results'][0]['embedding'], [1.0, 0.0])
         self.assertIn('/images/folder/one.jpg', body['results'][0]['image_url'])
+        clip_mock.assert_called_once_with('red car', normalize=True)
         self.assertEqual(search_mock.call_args.kwargs['num_results'], 100)
         self.assertEqual(search_mock.call_args.kwargs['distance_metric'], 'mahalanobis')
-        vectors_mock.assert_called_once_with([0, 1], distance_metric='euclidean')
+        self.assertEqual(search_mock.call_args.kwargs['base_metric'], 'cosine')
+        vectors_mock.assert_called_once_with([0, 1], distance_metric='cosine')
 
     def test_image_index_returns_the_dataset_image_as_query(self):
         search_payload = {
@@ -92,6 +99,7 @@ class MahalanobisSearchApiTests(SimpleTestCase):
         ):
             response = self.post_json({
                 'query_image_index': 1,
+                'distance_metric': 'euclidean',
                 'metric_matrix': [[2.0, 0.0], [0.0, 1.0]],
             })
 
@@ -100,12 +108,14 @@ class MahalanobisSearchApiTests(SimpleTestCase):
         self.assertEqual(response.json()['query']['image_index'], 1)
         self.assertEqual(response.json()['query']['image_name'], 'folder/two.jpg')
         self.assertEqual(response.json()['query']['embedding'], [0.0, 1.0])
+        self.assertEqual(response.json()['metric']['candidate_distance_metric'], 'euclidean')
         image_mock.assert_called_once_with(1, distance_metric='euclidean')
 
     def test_exactly_one_query_source_is_required(self):
         response = self.post_json({
             'query_text': 'red car',
             'query_image_index': 1,
+            'distance_metric': 'euclidean',
             'metric_matrix': [[1.0, 0.0], [0.0, 1.0]],
         })
 
@@ -115,6 +125,7 @@ class MahalanobisSearchApiTests(SimpleTestCase):
     def test_matrix_must_match_dataset_dimension(self):
         response = self.post_json({
             'query_text': 'red car',
+            'distance_metric': 'euclidean',
             'metric_matrix': [[1.0]],
         })
 
@@ -124,11 +135,31 @@ class MahalanobisSearchApiTests(SimpleTestCase):
     def test_matrix_must_be_positive_semidefinite(self):
         response = self.post_json({
             'query_text': 'red car',
+            'distance_metric': 'euclidean',
             'metric_matrix': [[1.0, 0.0], [0.0, -1.0]],
         })
 
         self.assertEqual(response.status_code, 400)
         self.assertIn('positive semidefinite', response.json()['error'])
+
+    def test_distance_metric_is_required(self):
+        response = self.post_json({
+            'query_text': 'red car',
+            'metric_matrix': [[1.0, 0.0], [0.0, 1.0]],
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('distance_metric is required', response.json()['error'])
+
+    def test_distance_metric_must_be_supported(self):
+        response = self.post_json({
+            'query_text': 'red car',
+            'distance_metric': 'manhattan',
+            'metric_matrix': [[1.0, 0.0], [0.0, 1.0]],
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("distance_metric must be 'euclidean'", response.json()['error'])
 
 
 class MahalanobisServiceTests(SimpleTestCase):
@@ -162,3 +193,35 @@ class MahalanobisServiceTests(SimpleTestCase):
         self.assertEqual(distances.tolist(), [0.0, 1.0])
         vectors_mock.assert_called_once()
         self.assertEqual(vectors_mock.call_args.kwargs['distance_metric'], 'euclidean')
+
+    def test_faiss_cosine_candidates_use_the_ip_index(self):
+        service = ImageSimilarityService()
+        service.dataset_loaded = True
+        service.faiss_enabled = True
+        service.faiss_l2_index = None
+        service.faiss_ip_index = object()
+        service.image_names = ['one.jpg', 'two.jpg']
+        service.image_names_ip = service.image_names
+        service.vector_dim = 2
+
+        with (
+            patch.object(
+                service,
+                'nearest_indices_cosine',
+                return_value=(np.asarray([0, 1]), np.asarray([0.0, 1.0])),
+            ) as cosine_mock,
+            patch.object(
+                service,
+                '_get_vectors_by_indices',
+                return_value=np.asarray([[0.0, 0.0], [1.0, 0.0]]),
+            ) as vectors_mock,
+        ):
+            service.nearest_indices_mahalanobis(
+                anchor_vector=np.asarray([0.0, 0.0]),
+                metric_matrix=np.eye(2),
+                num_indices=2,
+                base_metric='cosine',
+            )
+
+        cosine_mock.assert_called_once()
+        self.assertEqual(vectors_mock.call_args.kwargs['distance_metric'], 'cosine')

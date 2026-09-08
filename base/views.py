@@ -1153,6 +1153,17 @@ def _parse_mahalanobis_api_payload(request):
     if has_text_query == has_image_query:
         raise ValueError('Provide exactly one of query_text or query_image_index.')
 
+    raw_distance_metric = payload.get('distance_metric', payload.get('base_metric'))
+    if not isinstance(raw_distance_metric, str) or not raw_distance_metric.strip():
+        raise ValueError("distance_metric is required ('euclidean' or 'cosine').")
+    base_metric = raw_distance_metric.strip().lower()
+    if base_metric in {'cosine', 'inner_product', 'dot_product'}:
+        base_metric = 'cosine'
+    elif base_metric != 'euclidean':
+        raise ValueError(
+            "distance_metric must be 'euclidean', 'cosine', 'inner_product', or 'dot_product'."
+        )
+
     raw_matrix = payload.get('metric_matrix', payload.get('matrix'))
     if raw_matrix is None:
         raise ValueError('metric_matrix is required.')
@@ -1211,7 +1222,7 @@ def _parse_mahalanobis_api_payload(request):
         if query['image_index'] < 0:
             raise ValueError('query_image_index must be zero or greater.')
 
-    return query, metric_matrix, minimum_eigenvalue
+    return query, metric_matrix, minimum_eigenvalue, base_metric
 
 
 @csrf_exempt
@@ -1223,14 +1234,17 @@ def mahalanobis_search_api(request):
         return JsonResponse({'success': False, 'error': 'Dataset not loaded'}, status=503)
 
     try:
-        query, metric_matrix, minimum_eigenvalue = _parse_mahalanobis_api_payload(request)
+        query, metric_matrix, minimum_eigenvalue, base_metric = _parse_mahalanobis_api_payload(request)
 
         if query['type'] == 'text':
-            query_vector = clip_service.text_to_vector(query['text'], normalize=False)
+            query_vector = clip_service.text_to_vector(
+                query['text'],
+                normalize=(base_metric == 'cosine'),
+            )
         else:
             query_name, query_vector = image_similarity_service.get_image_by_index(
                 query['image_index'],
-                distance_metric='euclidean',
+                distance_metric=base_metric,
             )
             query['image_name'] = query_name
 
@@ -1242,6 +1256,7 @@ def mahalanobis_search_api(request):
             num_results=MAHALANOBIS_API_RESULT_COUNT,
             distance_metric='mahalanobis',
             metric_matrix=metric_matrix,
+            base_metric=base_metric,
         )
         raw_results = sorted(
             search_results.get('results', []),
@@ -1250,7 +1265,7 @@ def mahalanobis_search_api(request):
         result_indices = [int(result['index']) for result in raw_results]
         result_vectors = image_similarity_service.get_vectors_by_indices(
             result_indices,
-            distance_metric='euclidean',
+            distance_metric=base_metric,
         )
 
         results = []
@@ -1276,9 +1291,9 @@ def mahalanobis_search_api(request):
         return JsonResponse({
             'success': True,
             'query': query,
-            'query_embedding': query['embedding'],
             'metric': {
                 'name': 'mahalanobis',
+                'candidate_distance_metric': base_metric,
                 'dimension': int(metric_matrix.shape[0]),
                 'minimum_eigenvalue': minimum_eigenvalue,
             },

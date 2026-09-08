@@ -1169,7 +1169,13 @@ class ImageSimilarityService:
         nearest_distances = distances[nearest_indices]
         return nearest_indices, nearest_distances
 
-    def nearest_indices_mahalanobis(self, anchor_vector, metric_matrix, num_indices=50):
+    def nearest_indices_mahalanobis(
+        self,
+        anchor_vector,
+        metric_matrix,
+        num_indices=50,
+        base_metric='euclidean',
+    ):
         """
         Find the nearest images using Mahalanobis distance.
 
@@ -1177,6 +1183,7 @@ class ImageSimilarityService:
             anchor_vector: The anchor image embedding vector
             metric_matrix: The metric matrix for Mahalanobis distance
             num_indices: Number of nearest images to return
+            base_metric: FAISS candidate metric ('euclidean' or 'cosine')
 
         Returns:
             tuple: (nearest_indices, nearest_distances)
@@ -1185,21 +1192,32 @@ class ImageSimilarityService:
             raise ValueError("Dataset not loaded. Call load_dataset_from_files first.")
 
         k = int(num_indices)
+        normalized_base_metric = str(base_metric or 'euclidean').strip().lower()
+        if normalized_base_metric in {'cosine', 'inner_product', 'dot_product'}:
+            normalized_base_metric = 'cosine'
+        elif normalized_base_metric != 'euclidean':
+            raise ValueError("base_metric must be 'euclidean' or 'cosine'.")
 
         if self.faiss_enabled:
             # Approximate exact Mahalanobis by refining a larger candidate set from FAISS.
             candidate_count = min(
-                len(self.image_names),
+                self._mapping_size_for_metric(distance_metric=normalized_base_metric),
                 max(k, k * self.faiss_candidate_multiplier)
             )
 
-            cand_indices, _ = self.nearest_indices_euclidean(anchor_vector, candidate_count)
+            if normalized_base_metric == 'cosine':
+                cand_indices, _ = self.nearest_indices_cosine(anchor_vector, candidate_count)
+            else:
+                cand_indices, _ = self.nearest_indices_euclidean(anchor_vector, candidate_count)
             if cand_indices.size == 0:
                 return np.empty((0,), dtype=np.int64), np.empty((0,), dtype=np.float32)
 
-            # Reconstruct from the same index family used for candidate generation.
-            # nearest_indices_euclidean prefers L2 and falls back to IP when L2 is absent.
-            refine_metric = 'euclidean' if self.faiss_l2_index is not None else 'cosine'
+            # Reconstruct from the same index family used for candidate generation,
+            # including the fallback used when the preferred FAISS index is absent.
+            if normalized_base_metric == 'cosine':
+                refine_metric = 'cosine' if self.faiss_ip_index is not None else 'euclidean'
+            else:
+                refine_metric = 'euclidean' if self.faiss_l2_index is not None else 'cosine'
             cand_vectors = self._get_vectors_by_indices(cand_indices, distance_metric=refine_metric)
             distances = vectorized_mahalanobis_distances(anchor_vector, cand_vectors, metric_matrix)
             order = np.argsort(distances)[:k]
@@ -1690,7 +1708,14 @@ class ImageSimilarityService:
             'results': results
         }
 
-    def search_by_vector(self, query_vector, num_results=50, distance_metric='cosine', metric_matrix=None):
+    def search_by_vector(
+        self,
+        query_vector,
+        num_results=50,
+        distance_metric='cosine',
+        metric_matrix=None,
+        base_metric='euclidean',
+    ):
         """
         Search for similar images given a query vector (e.g., from text or image).
 
@@ -1699,6 +1724,7 @@ class ImageSimilarityService:
             num_results: Number of similar images to return
             distance_metric: Distance metric to use ('euclidean', 'cosine', 'mahalanobis')
             metric_matrix: Metric matrix (required for mahalanobis)
+            base_metric: Candidate metric for Mahalanobis search ('euclidean' or 'cosine')
 
         Returns:
             dict: Dictionary containing search results
@@ -1715,21 +1741,31 @@ class ImageSimilarityService:
         elif distance_metric == 'mahalanobis':
             if metric_matrix is None:
                 raise ValueError("Metric matrix required for mahalanobis distance")
-            indices, distances = self.nearest_indices_mahalanobis(query_vector, metric_matrix, num_results)
+            indices, distances = self.nearest_indices_mahalanobis(
+                query_vector,
+                metric_matrix,
+                num_results,
+                base_metric=base_metric,
+            )
         else:
             raise ValueError(f"Unknown distance metric: {distance_metric}")
 
+        result_mapping_metric = base_metric if distance_metric == 'mahalanobis' else distance_metric
         results = []
         for idx, dist in zip(indices, distances):
             results.append({
                 'index': int(idx),
-                'image_name': self._get_image_name_for_metric(int(idx), distance_metric=distance_metric),
+                'image_name': self._get_image_name_for_metric(
+                    int(idx),
+                    distance_metric=result_mapping_metric,
+                ),
                 'distance': float(dist)
             })
 
         return {
             'query_type': 'vector',
             'distance_metric': distance_metric,
+            'base_metric': result_mapping_metric if distance_metric == 'mahalanobis' else None,
             'results': results
         }
 
