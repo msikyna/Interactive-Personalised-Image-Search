@@ -183,3 +183,13 @@ IMAGE_BASE_PATH = os.environ.get(
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# A 768x768 JSON metric matrix is commonly several megabytes. Keep this bounded,
+# but above Django's 2.5 MiB default so the standalone Mahalanobis API can accept it.
+try:
+    DATA_UPLOAD_MAX_MEMORY_SIZE = max(
+        2_621_440,
+        int(os.environ.get('DJANGO_DATA_UPLOAD_MAX_MEMORY_SIZE', str(32 * 1024 * 1024)))
+    )
+except (TypeError, ValueError):
+    DATA_UPLOAD_MAX_MEMORY_SIZE = 32 * 1024 * 1024

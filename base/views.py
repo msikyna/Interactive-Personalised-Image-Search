@@ -3,6 +3,7 @@ from django.http import JsonResponse, FileResponse, Http404, HttpResponse
 from django.db import IntegrityError
 from functools import lru_cache
 from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
 from .services import image_similarity_service
 from .clip_service import clip_service
 from django.conf import settings
@@ -1126,6 +1127,177 @@ def load_dataset_view(request):
             }, status=400)
 
     return JsonResponse({'error': 'POST required'}, status=405)
+
+
+MAHALANOBIS_API_RESULT_COUNT = 100
+MAHALANOBIS_MATRIX_SYMMETRY_TOLERANCE = 1e-5
+MAHALANOBIS_MATRIX_PSD_TOLERANCE = 1e-6
+
+
+def _parse_mahalanobis_api_payload(request):
+    """Parse and validate the JSON body for the standalone search API."""
+    import json
+
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError('Request body must be valid UTF-8 JSON.') from exc
+
+    if not isinstance(payload, dict):
+        raise ValueError('Request body must be a JSON object.')
+
+    raw_text_query = payload.get('query_text', payload.get('query'))
+    raw_image_index = payload.get('query_image_index', payload.get('image_index'))
+    has_text_query = isinstance(raw_text_query, str) and bool(raw_text_query.strip())
+    has_image_query = raw_image_index not in (None, '')
+    if has_text_query == has_image_query:
+        raise ValueError('Provide exactly one of query_text or query_image_index.')
+
+    raw_matrix = payload.get('metric_matrix', payload.get('matrix'))
+    if raw_matrix is None:
+        raise ValueError('metric_matrix is required.')
+
+    try:
+        metric_matrix = np.asarray(raw_matrix, dtype=np.float64)
+    except (TypeError, ValueError) as exc:
+        raise ValueError('metric_matrix must be a rectangular array of numbers.') from exc
+
+    expected_dimension = int(image_similarity_service.vector_dim)
+    expected_shape = (expected_dimension, expected_dimension)
+    if metric_matrix.ndim != 2 or metric_matrix.shape != expected_shape:
+        raise ValueError(
+            f'metric_matrix must have shape {expected_shape}; received {metric_matrix.shape}.'
+        )
+    if not np.all(np.isfinite(metric_matrix)):
+        raise ValueError('metric_matrix may contain only finite numbers.')
+    if not np.allclose(
+        metric_matrix,
+        metric_matrix.T,
+        rtol=MAHALANOBIS_MATRIX_SYMMETRY_TOLERANCE,
+        atol=MAHALANOBIS_MATRIX_SYMMETRY_TOLERANCE,
+    ):
+        raise ValueError('metric_matrix must be symmetric.')
+
+    # Work with an exactly symmetric matrix after accepting normal serialization noise.
+    metric_matrix = (metric_matrix + metric_matrix.T) / 2.0
+    try:
+        minimum_eigenvalue = float(np.linalg.eigvalsh(metric_matrix)[0])
+    except np.linalg.LinAlgError as exc:
+        raise ValueError('metric_matrix eigenvalue calculation did not converge.') from exc
+    if minimum_eigenvalue < -MAHALANOBIS_MATRIX_PSD_TOLERANCE:
+        raise ValueError(
+            'metric_matrix must be positive semidefinite; '
+            f'minimum eigenvalue is {minimum_eigenvalue:.6g}.'
+        )
+    if minimum_eigenvalue < 0.0:
+        # Remove a tiny negative eigenvalue caused by floating-point serialization.
+        metric_matrix += np.eye(expected_dimension, dtype=np.float64) * (-minimum_eigenvalue)
+        minimum_eigenvalue = 0.0
+
+    query = {
+        'type': 'text' if has_text_query else 'image',
+    }
+    if has_text_query:
+        query['text'] = raw_text_query.strip()
+    else:
+        if isinstance(raw_image_index, bool):
+            raise ValueError('query_image_index must be an integer.')
+        try:
+            query['image_index'] = int(raw_image_index)
+        except (TypeError, ValueError) as exc:
+            raise ValueError('query_image_index must be an integer.') from exc
+        if isinstance(raw_image_index, float) and not raw_image_index.is_integer():
+            raise ValueError('query_image_index must be an integer.')
+        if query['image_index'] < 0:
+            raise ValueError('query_image_index must be zero or greater.')
+
+    return query, metric_matrix, minimum_eigenvalue
+
+
+@csrf_exempt
+def mahalanobis_search_api(request):
+    """Search with a caller-supplied Mahalanobis matrix and return result embeddings."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
+    if not image_similarity_service.dataset_loaded:
+        return JsonResponse({'success': False, 'error': 'Dataset not loaded'}, status=503)
+
+    try:
+        query, metric_matrix, minimum_eigenvalue = _parse_mahalanobis_api_payload(request)
+
+        if query['type'] == 'text':
+            query_vector = clip_service.text_to_vector(query['text'], normalize=False)
+        else:
+            query_name, query_vector = image_similarity_service.get_image_by_index(
+                query['image_index'],
+                distance_metric='euclidean',
+            )
+            query['image_name'] = query_name
+
+        query_vector = np.asarray(query_vector, dtype=np.float32).reshape(-1)
+        query['embedding'] = query_vector.tolist()
+
+        search_results = image_similarity_service.search_by_vector(
+            query_vector=query_vector,
+            num_results=MAHALANOBIS_API_RESULT_COUNT,
+            distance_metric='mahalanobis',
+            metric_matrix=metric_matrix,
+        )
+        raw_results = sorted(
+            search_results.get('results', []),
+            key=lambda result: float(result['distance']),
+        )
+        result_indices = [int(result['index']) for result in raw_results]
+        result_vectors = image_similarity_service.get_vectors_by_indices(
+            result_indices,
+            distance_metric='euclidean',
+        )
+
+        results = []
+        for rank, (result, vector) in enumerate(zip(raw_results, result_vectors), start=1):
+            image_name = str(result['image_name'])
+            results.append({
+                'rank': rank,
+                'position': rank,
+                'index': int(result['index']),
+                'image_name': image_name,
+                'image_url': request.build_absolute_uri(
+                    reverse('serve_image', kwargs={'image_path': image_name})
+                ),
+                'distance': float(result['distance']),
+                'embedding': np.asarray(vector, dtype=np.float32).tolist(),
+            })
+
+        search_mode = (
+            'faiss_candidate_rerank'
+            if image_similarity_service.faiss_enabled
+            else 'exact_full_scan'
+        )
+        return JsonResponse({
+            'success': True,
+            'query': query,
+            'query_embedding': query['embedding'],
+            'metric': {
+                'name': 'mahalanobis',
+                'dimension': int(metric_matrix.shape[0]),
+                'minimum_eigenvalue': minimum_eigenvalue,
+            },
+            'ordered_by': 'distance_ascending',
+            'search_mode': search_mode,
+            'requested_result_count': MAHALANOBIS_API_RESULT_COUNT,
+            'result_count': len(results),
+            'results': results,
+        })
+    except (ValueError, TypeError, IndexError) as exc:
+        return JsonResponse({'success': False, 'error': str(exc)}, status=400)
+    except Exception as exc:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'error': str(exc),
+            'error_type': exc.__class__.__name__,
+        }, status=500)
 
 
 def search_api(request):

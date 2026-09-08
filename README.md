@@ -81,6 +81,8 @@ Open your web browser and navigate to `http://127.0.0.1:8000/` to use the image 
 ## Usage
 1. Select a base image from selection or search by text
 
+For caller-supplied metric-matrix searches, see [MAHALANOBIS_SEARCH_API.md](MAHALANOBIS_SEARCH_API.md).
+
 ## Docker Deployment (Server)
 
 This setup is prepared so you can pull the repo and run with Docker directly.

@@ -1009,6 +1009,18 @@ class ImageSimilarityService:
             return self._reconstruct_vectors_by_indices(indices, distance_metric=distance_metric)
         return self.dataset[np.asarray(indices, dtype=np.int64)]
 
+    def get_vectors_by_indices(self, indices, distance_metric='euclidean'):
+        """Return dataset embeddings for a collection of public image indices."""
+        if not self.dataset_loaded:
+            raise ValueError("Dataset not loaded. Call load_dataset_from_files first.")
+
+        index_array = np.asarray(indices, dtype=np.int64).reshape(-1)
+        mapping_size = self._mapping_size_for_metric(distance_metric=distance_metric)
+        if np.any(index_array < 0) or np.any(index_array >= mapping_size):
+            raise IndexError(f"Image index out of bounds for dataset size {mapping_size}.")
+
+        return self._get_vectors_by_indices(index_array, distance_metric=distance_metric)
+
     def load_dataset_from_files(self, directory, files_list):
         """
         Load dataset from embedding files.
@@ -1185,7 +1197,9 @@ class ImageSimilarityService:
             if cand_indices.size == 0:
                 return np.empty((0,), dtype=np.int64), np.empty((0,), dtype=np.float32)
 
-            refine_metric = 'cosine' if distance_mode == 'dot_product' else 'euclidean'
+            # Reconstruct from the same index family used for candidate generation.
+            # nearest_indices_euclidean prefers L2 and falls back to IP when L2 is absent.
+            refine_metric = 'euclidean' if self.faiss_l2_index is not None else 'cosine'
             cand_vectors = self._get_vectors_by_indices(cand_indices, distance_metric=refine_metric)
             distances = vectorized_mahalanobis_distances(anchor_vector, cand_vectors, metric_matrix)
             order = np.argsort(distances)[:k]

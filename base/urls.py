@@ -7,6 +7,7 @@ urlpatterns = [
     path('load-clip/', views.load_clip_model, name='load_clip_model'),
     path('api/search/', views.search_api, name='search_api'),
     path('api/text-search/', views.text_search_api, name='text_search_api'),
+    path('api/mahalanobis-search/', views.mahalanobis_search_api, name='mahalanobis_search_api'),
     path('search-by-image/', views.image_upload_search, name='image_upload_search'),
     path('images/<path:image_path>', views.serve_image, name='serve_image'),
     path('login/', views.login_view, name='login'),
