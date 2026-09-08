@@ -16,7 +16,7 @@ The shorter aliases `matrix`, `query`, `image_index`, and `base_metric` are also
 - `"cosine"` uses the normalized inner-product index (`"inner_product"` and `"dot_product"` are accepted aliases).
 - `"euclidean"` uses the L2 index and unnormalized query embedding.
 
-This choice can produce different results. The API uses the same matrix-derived scaling factor, range search, Mahalanobis filter, and refinement pipeline as the UI. Each returned `distance` is the Mahalanobis distance calculated with `metric_matrix`; results are ordered from the smallest value to the largest.
+This choice can produce different results. The API follows the UI exactly: an identity or otherwise unscaled matrix uses ordinary cosine or Euclidean k-NN, while a learned matrix with a scaling factor above 1 uses range search, Mahalanobis filtering, and refinement. The returned `distance` uses the same metric shown by the UI, and results are ordered from the smallest value to the largest.
 
 The matrix must match the dataset embedding dimension (normally 768×768), be symmetric and positive semidefinite, and contain only finite numbers.
 
@@ -78,16 +78,17 @@ An abridged successful response looks like:
     "embedding": [0.04, -0.01, 0.02]
   },
   "metric": {
-    "name": "mahalanobis",
+    "name": "cosine",
     "candidate_distance_metric": "cosine",
     "distance_mode": "dot_product",
     "dimension": 768,
     "minimum_eigenvalue": 1.0,
-    "scaling_factor": 1.0
+    "scaling_factor": 1.0,
+    "matrix_applied": false
   },
   "ordered_by": "distance_ascending",
-  "search_mode": "filter_and_refine",
-  "progressive_stage": "full",
+  "search_mode": "base_knn",
+  "progressive_stage": null,
   "requested_result_count": 100,
   "result_count": 100,
   "results": [
@@ -104,4 +105,4 @@ An abridged successful response looks like:
 }
 ```
 
-The endpoint reports `search_mode` as `filter_and_refine` and follows the same Inner Product or Euclidean filtering path as the UI. The default request limit is 32 MiB and can be changed with `DJANGO_DATA_UPLOAD_MAX_MEMORY_SIZE`.
+For an identity matrix, `search_mode` is `base_knn`, `matrix_applied` is `false`, and `metric.name` is the requested base metric. For a learned matrix that activates personalization, `search_mode` is `filter_and_refine`, `matrix_applied` is `true`, and `metric.name` is `mahalanobis`. The default request limit is 32 MiB and can be changed with `DJANGO_DATA_UPLOAD_MAX_MEMORY_SIZE`.

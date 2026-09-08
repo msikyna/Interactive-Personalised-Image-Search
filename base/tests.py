@@ -124,6 +124,56 @@ class MahalanobisSearchApiTests(SimpleTestCase):
         self.assertEqual(search_mock.call_args.kwargs['distance_mode'], 'euclidean')
         self.assertEqual(search_mock.call_args.kwargs['scaling_factor'], 2.0)
 
+    def test_identity_matrix_uses_the_ui_base_knn_path_for_both_metrics(self):
+        search_payload = {
+            'results': [
+                {'index': 0, 'image_name': 'folder/one.jpg', 'distance': 0.125},
+            ]
+        }
+
+        for distance_metric, normalize in (('cosine', True), ('euclidean', False)):
+            with self.subTest(distance_metric=distance_metric):
+                with (
+                    patch.object(
+                        views.clip_service,
+                        'text_to_vector',
+                        return_value=np.asarray([0.5, 0.5]),
+                    ) as clip_mock,
+                    patch.object(
+                        self.service,
+                        'search_by_vector',
+                        return_value=search_payload,
+                    ) as search_mock,
+                    patch.object(
+                        self.service,
+                        'search_with_filter_refine',
+                    ) as refine_mock,
+                    patch.object(
+                        self.service,
+                        'get_vectors_by_indices',
+                        return_value=np.asarray([[1.0, 0.0]], dtype=np.float32),
+                    ),
+                ):
+                    response = self.post_json({
+                        'query_text': 'red car',
+                        'distance_metric': distance_metric,
+                        'metric_matrix': [[1.0, 0.0], [0.0, 1.0]],
+                    })
+
+                self.assertEqual(response.status_code, 200)
+                body = response.json()
+                self.assertEqual(body['metric']['name'], distance_metric)
+                self.assertFalse(body['metric']['matrix_applied'])
+                self.assertEqual(body['search_mode'], 'base_knn')
+                self.assertIsNone(body['progressive_stage'])
+                self.assertEqual(body['results'][0]['distance'], 0.125)
+                clip_mock.assert_called_once_with('red car', normalize=normalize)
+                self.assertEqual(
+                    search_mock.call_args.kwargs['distance_metric'],
+                    distance_metric,
+                )
+                refine_mock.assert_not_called()
+
     def test_exactly_one_query_source_is_required(self):
         response = self.post_json({
             'query_text': 'red car',

@@ -1256,19 +1256,34 @@ def mahalanobis_search_api(request):
 
         scaling_factor = float(MatrixManager.calculate_scaling_factor(metric_matrix))
         distance_mode = _distance_mode_for_metric(base_metric)
-        range_stage, quick_radius_ratio = _progressive_filter_refine_params(
-            initial_request=True
-        )
-        search_results = image_similarity_service.search_with_filter_refine(
-            query_vector=query_vector,
-            metric_matrix=metric_matrix,
-            scaling_factor=scaling_factor,
-            num_results=MAHALANOBIS_API_RESULT_COUNT,
-            growth_factor=1.0,
-            distance_mode=distance_mode,
-            range_stage=range_stage,
-            quick_radius_ratio=quick_radius_ratio,
-        )
+        use_filter_refine = scaling_factor > 1.0
+        if use_filter_refine:
+            range_stage, quick_radius_ratio = _progressive_filter_refine_params(
+                initial_request=True
+            )
+            search_results = image_similarity_service.search_with_filter_refine(
+                query_vector=query_vector,
+                metric_matrix=metric_matrix,
+                scaling_factor=scaling_factor,
+                num_results=MAHALANOBIS_API_RESULT_COUNT,
+                growth_factor=1.0,
+                distance_mode=distance_mode,
+                range_stage=range_stage,
+                quick_radius_ratio=quick_radius_ratio,
+            )
+            result_metric_name = 'mahalanobis'
+            search_mode = 'filter_and_refine'
+        else:
+            # This is the same optimization used by the UI for identity/unscaled
+            # matrices. It also keeps FAISS k-NN results identical to the UI.
+            range_stage = None
+            search_results = image_similarity_service.search_by_vector(
+                query_vector=query_vector,
+                num_results=MAHALANOBIS_API_RESULT_COUNT,
+                distance_metric=base_metric,
+            )
+            result_metric_name = base_metric
+            search_mode = 'base_knn'
         raw_results = sorted(
             search_results.get('results', []),
             key=lambda result: float(result['distance']),
@@ -1298,16 +1313,21 @@ def mahalanobis_search_api(request):
             'success': True,
             'query': query,
             'metric': {
-                'name': 'mahalanobis',
+                'name': result_metric_name,
                 'candidate_distance_metric': base_metric,
                 'distance_mode': distance_mode,
                 'dimension': int(metric_matrix.shape[0]),
                 'minimum_eigenvalue': minimum_eigenvalue,
                 'scaling_factor': scaling_factor,
+                'matrix_applied': use_filter_refine,
             },
             'ordered_by': 'distance_ascending',
-            'search_mode': 'filter_and_refine',
-            'progressive_stage': search_results.get('progressive_stage', range_stage),
+            'search_mode': search_mode,
+            'progressive_stage': (
+                search_results.get('progressive_stage', range_stage)
+                if use_filter_refine
+                else None
+            ),
             'requested_result_count': MAHALANOBIS_API_RESULT_COUNT,
             'result_count': len(results),
             'results': results,
