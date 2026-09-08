@@ -49,13 +49,17 @@ class MahalanobisSearchApiTests(SimpleTestCase):
                 'text_to_vector',
                 return_value=np.asarray([0.5, 0.5]),
             ) as clip_mock,
-            patch.object(self.service, 'search_by_vector', return_value=search_payload) as search_mock,
+            patch.object(
+                self.service,
+                'search_with_filter_refine',
+                return_value=search_payload,
+            ) as search_mock,
             patch.object(self.service, 'get_vectors_by_indices', return_value=vectors) as vectors_mock,
         ):
             response = self.post_json({
                 'query_text': 'red car',
                 'distance_metric': 'cosine',
-                'metric_matrix': [[1.0, 0.0], [0.0, 1.0]],
+                'metric_matrix': [[0.25, 0.0], [0.0, 1.0]],
             })
 
         self.assertEqual(response.status_code, 200)
@@ -66,6 +70,9 @@ class MahalanobisSearchApiTests(SimpleTestCase):
         self.assertEqual(body['query']['embedding'], [0.5, 0.5])
         self.assertNotIn('query_embedding', body)
         self.assertEqual(body['metric']['candidate_distance_metric'], 'cosine')
+        self.assertEqual(body['metric']['distance_mode'], 'dot_product')
+        self.assertEqual(body['metric']['scaling_factor'], 2.0)
+        self.assertEqual(body['search_mode'], 'filter_and_refine')
         self.assertEqual([item['distance'] for item in body['results']], [0.2, 0.8])
         self.assertEqual([item['rank'] for item in body['results']], [1, 2])
         self.assertEqual([item['position'] for item in body['results']], [1, 2])
@@ -73,8 +80,8 @@ class MahalanobisSearchApiTests(SimpleTestCase):
         self.assertIn('/images/folder/one.jpg', body['results'][0]['image_url'])
         clip_mock.assert_called_once_with('red car', normalize=True)
         self.assertEqual(search_mock.call_args.kwargs['num_results'], 100)
-        self.assertEqual(search_mock.call_args.kwargs['distance_metric'], 'mahalanobis')
-        self.assertEqual(search_mock.call_args.kwargs['base_metric'], 'cosine')
+        self.assertEqual(search_mock.call_args.kwargs['distance_mode'], 'dot_product')
+        self.assertEqual(search_mock.call_args.kwargs['scaling_factor'], 2.0)
         vectors_mock.assert_called_once_with([0, 1], distance_metric='cosine')
 
     def test_image_index_returns_the_dataset_image_as_query(self):
@@ -90,7 +97,11 @@ class MahalanobisSearchApiTests(SimpleTestCase):
                 'get_image_by_index',
                 return_value=('folder/two.jpg', np.asarray([0.0, 1.0])),
             ) as image_mock,
-            patch.object(self.service, 'search_by_vector', return_value=search_payload),
+            patch.object(
+                self.service,
+                'search_with_filter_refine',
+                return_value=search_payload,
+            ) as search_mock,
             patch.object(
                 self.service,
                 'get_vectors_by_indices',
@@ -100,7 +111,7 @@ class MahalanobisSearchApiTests(SimpleTestCase):
             response = self.post_json({
                 'query_image_index': 1,
                 'distance_metric': 'euclidean',
-                'metric_matrix': [[2.0, 0.0], [0.0, 1.0]],
+                'metric_matrix': [[2.0, 0.0], [0.0, 0.25]],
             })
 
         self.assertEqual(response.status_code, 200)
@@ -110,6 +121,8 @@ class MahalanobisSearchApiTests(SimpleTestCase):
         self.assertEqual(response.json()['query']['embedding'], [0.0, 1.0])
         self.assertEqual(response.json()['metric']['candidate_distance_metric'], 'euclidean')
         image_mock.assert_called_once_with(1, distance_metric='euclidean')
+        self.assertEqual(search_mock.call_args.kwargs['distance_mode'], 'euclidean')
+        self.assertEqual(search_mock.call_args.kwargs['scaling_factor'], 2.0)
 
     def test_exactly_one_query_source_is_required(self):
         response = self.post_json({

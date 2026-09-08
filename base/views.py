@@ -1251,12 +1251,23 @@ def mahalanobis_search_api(request):
         query_vector = np.asarray(query_vector, dtype=np.float32).reshape(-1)
         query['embedding'] = query_vector.tolist()
 
-        search_results = image_similarity_service.search_by_vector(
+        # Keep this endpoint aligned with the UI's personalized-search path.
+        from .feedback.matrix_manager import MatrixManager
+
+        scaling_factor = float(MatrixManager.calculate_scaling_factor(metric_matrix))
+        distance_mode = _distance_mode_for_metric(base_metric)
+        range_stage, quick_radius_ratio = _progressive_filter_refine_params(
+            initial_request=True
+        )
+        search_results = image_similarity_service.search_with_filter_refine(
             query_vector=query_vector,
-            num_results=MAHALANOBIS_API_RESULT_COUNT,
-            distance_metric='mahalanobis',
             metric_matrix=metric_matrix,
-            base_metric=base_metric,
+            scaling_factor=scaling_factor,
+            num_results=MAHALANOBIS_API_RESULT_COUNT,
+            growth_factor=1.0,
+            distance_mode=distance_mode,
+            range_stage=range_stage,
+            quick_radius_ratio=quick_radius_ratio,
         )
         raw_results = sorted(
             search_results.get('results', []),
@@ -1283,22 +1294,20 @@ def mahalanobis_search_api(request):
                 'embedding': np.asarray(vector, dtype=np.float32).tolist(),
             })
 
-        search_mode = (
-            'faiss_candidate_rerank'
-            if image_similarity_service.faiss_enabled
-            else 'exact_full_scan'
-        )
         return JsonResponse({
             'success': True,
             'query': query,
             'metric': {
                 'name': 'mahalanobis',
                 'candidate_distance_metric': base_metric,
+                'distance_mode': distance_mode,
                 'dimension': int(metric_matrix.shape[0]),
                 'minimum_eigenvalue': minimum_eigenvalue,
+                'scaling_factor': scaling_factor,
             },
             'ordered_by': 'distance_ascending',
-            'search_mode': search_mode,
+            'search_mode': 'filter_and_refine',
+            'progressive_stage': search_results.get('progressive_stage', range_stage),
             'requested_result_count': MAHALANOBIS_API_RESULT_COUNT,
             'result_count': len(results),
             'results': results,
