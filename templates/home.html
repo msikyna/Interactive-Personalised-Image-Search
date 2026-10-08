@@ -44,7 +44,7 @@
          hidden>
         <div class="image-availability-modal-content">
             <div class="image-availability-modal-icon" aria-hidden="true">⚠️</div>
-            <h2 id="imageAvailabilityModalTitle">Search images temporarily unavailable</h2>
+            <h2 id="imageAvailabilityModalTitle">Images temporarily unavailable</h2>
             <p id="imageAvailabilityModalMessage"></p>
             <button id="imageAvailabilityModalClose"
                     type="button"
@@ -315,14 +315,32 @@
             {% elif random_images %}
                 <div class="random-images-section">
                     <h3>Random Images from the Dataset</h3>
-                    <div class="image-grid">
+                    <div id="imageAvailabilityNotice"
+                         class="image-availability-notice"
+                         role="status"
+                         aria-live="polite"
+                         hidden>
+                        <span class="image-availability-notice-icon" aria-hidden="true">⚠️</span>
+                        <div>
+                            <strong>Some images are temporarily unavailable.</strong>
+                            <p id="imageAvailabilityNoticeMessage"></p>
+                        </div>
+                    </div>
+
+                    <div class="image-grid"
+                         id="randomImagesGrid"
+                         data-availability-context="random">
                         {% for image in random_images %}
                             <div class="image-item">
                                 <a href="{% url 'home' %}?image_index={{ image.index }}&metric={{ distance_metric|default:'cosine' }}&num_results=20" class="image-link">
                                     <img src="{% url 'serve_image' image.image_name %}"
                                          alt="{{ image.image_name }}"
+                                         class="result-image"
+                                         data-result-image
+                                         data-original-src="{% url 'serve_image' image.image_name %}"
+                                         data-result-image-state="pending"
                                          loading="lazy"
-                                         onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23ddd%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23666%22%3ENo image%3C/text%3E%3C/svg%3E';">
+                                         onerror="this.dataset.resultImageState='unavailable'; this.dataset.showingUnavailablePlaceholder='true'; this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f1f3f5%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23666%22%3EImage unavailable%3C/text%3E%3C/svg%3E';">
                                 </a>
                             </div>
                         {% endfor %}
@@ -1760,7 +1778,14 @@
             availabilityModalPreviousFocus = null;
         }
 
-        function openImageAvailabilityModal(totalImages) {
+        function getImageAvailabilityGrid() {
+            return (
+                document.getElementById('resultsImageGrid') ||
+                document.getElementById('randomImagesGrid')
+            );
+        }
+
+        function openImageAvailabilityModal(totalImages, isRandomGrid) {
             if (availabilityModalDismissedGeneration === resultAvailabilityGeneration) {
                 return;
             }
@@ -1770,7 +1795,11 @@
             const closeButton = document.getElementById('imageAvailabilityModalClose');
             if (!modal || !message) return;
 
-            message.textContent = `We found ${totalImages} top ${totalImages === 1 ? 'result' : 'results'}, but none of the images could be loaded because our image storage service is temporarily unavailable. Please come back in a few days and try again.`;
+            if (isRandomGrid) {
+                message.textContent = `None of the ${totalImages} random images could be loaded because our image storage service is temporarily unavailable. Please come back in a few days and try again.`;
+            } else {
+                message.textContent = `We found ${totalImages} top ${totalImages === 1 ? 'result' : 'results'}, but none of the images could be loaded because our image storage service is temporarily unavailable. Please come back in a few days and try again.`;
+            }
 
             if (modal.hidden) {
                 availabilityModalPreviousFocus = document.activeElement;
@@ -1783,13 +1812,14 @@
         }
 
         function refreshResultImageAvailability() {
-            const grid = document.getElementById('resultsImageGrid');
+            const grid = getImageAvailabilityGrid();
             const notice = document.getElementById('imageAvailabilityNotice');
             const noticeMessage = document.getElementById('imageAvailabilityNoticeMessage');
             if (!grid || !notice || !noticeMessage) return;
 
             const images = Array.from(grid.querySelectorAll('img[data-result-image]'));
             const totalImages = images.length;
+            const isRandomGrid = grid.dataset.availabilityContext === 'random';
             const unavailableImages = images.filter(
                 image => image.dataset.resultImageState === 'unavailable'
             ).length;
@@ -1804,7 +1834,7 @@
 
             if (unavailableImages === totalImages) {
                 notice.hidden = true;
-                openImageAvailabilityModal(totalImages);
+                openImageAvailabilityModal(totalImages, isRandomGrid);
                 return;
             }
 
@@ -1812,7 +1842,8 @@
                 closeImageAvailabilityModal({ dismiss: false, restoreFocus: false });
             }
 
-            noticeMessage.textContent = `${unavailableImages} of the ${totalImages} top results could not be loaded because our image storage service is experiencing an issue. Please come back in a few days to see the missing images.`;
+            const itemLabel = isRandomGrid ? 'random images' : 'top results';
+            noticeMessage.textContent = `${unavailableImages} of the ${totalImages} ${itemLabel} could not be loaded because our image storage service is experiencing an issue. Please come back in a few days to see the missing images.`;
             notice.hidden = false;
         }
 
@@ -1931,7 +1962,7 @@
                 setResultImageAvailability(image, 'unavailable', generation);
             }, { once: true });
 
-            // Result images are lazy-loaded. A HEAD request checks every original
+            // Gallery images are lazy-loaded. A HEAD request checks every original
             // URL without downloading off-screen image bodies or requiring scroll.
             probeResultImage(image, generation);
         }
@@ -1947,7 +1978,7 @@
                 notice.hidden = true;
             }
 
-            const grid = document.getElementById('resultsImageGrid');
+            const grid = getImageAvailabilityGrid();
             if (!grid) return;
 
             const generation = resultAvailabilityGeneration;
