@@ -20,6 +20,7 @@ urlpatterns = [
     path('api/feedback/apply/', views.apply_feedback_learning, name='apply_feedback_learning'),
     path('api/feedback/apply/status/<uuid:job_id>/', views.feedback_apply_job_status, name='feedback_apply_job_status'),
     path('api/matrix/reset/', views.reset_metric_matrix, name='reset_metric_matrix'),
+    path('api/matrix/download/', views.download_current_matrix, name='download_current_matrix'),
     path('api/settings/update/', views.update_learning_settings, name='update_learning_settings'),
     path('api/settings/get/', views.get_learning_settings, name='get_learning_settings'),
     path('api/settings/available/', views.get_available_settings, name='get_available_settings'),

@@ -1,12 +1,139 @@
 import json
+import os
+import tempfile
+import zipfile
 from unittest.mock import patch
 
 import numpy as np
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from . import views
+from . import config
+from .image_urls import build_image_url, build_image_url_template
+from .models import User, UserMetricMatrix
 from .services import ImageSimilarityService
+
+
+class ImageUrlTests(SimpleTestCase):
+    def test_disa_url_preserves_prefix_folder_and_filename(self):
+        with (
+            patch.object(config, 'USE_DISA_PROFIMEDIA', True),
+            patch.object(config, 'DISA_BASE_URL', 'https://primary.example.test/app/'),
+        ):
+            image_url = build_image_url('558/0077109556.jpg')
+
+        self.assertEqual(
+            image_url,
+            'https://primary.example.test/app/images/558/0077109556.jpg',
+        )
+
+    def test_disa_url_supports_other_prefix_folders(self):
+        with (
+            patch.object(config, 'USE_DISA_PROFIMEDIA', True),
+            patch.object(config, 'DISA_BASE_URL', 'https://primary.example.test/app'),
+        ):
+            image_url = build_image_url('721/0012345678.jpg')
+
+        self.assertEqual(
+            image_url,
+            'https://primary.example.test/app/images/721/0012345678.jpg',
+        )
+
+    def test_alternative_url_uses_filename_stem_twice(self):
+        with (
+            patch.object(config, 'USE_DISA_PROFIMEDIA', False),
+            patch.object(
+                config,
+                'ALTERNATIVE_IMAGES_BASE_URL',
+                'https://images.example.test/large/1/3/',
+            ),
+        ):
+            image_url = build_image_url('558/0077109556.jpg')
+
+        self.assertEqual(
+            image_url,
+            'https://images.example.test/large/1/3/0077109556/'
+            'profimedia-0077109556.jpg',
+        )
+
+    def test_browser_template_matches_selected_url_shape(self):
+        with (
+            patch.object(config, 'USE_DISA_PROFIMEDIA', False),
+            patch.object(
+                config,
+                'ALTERNATIVE_IMAGES_BASE_URL',
+                'https://images.example.test/large/1/3',
+            ),
+        ):
+            image_url_template = build_image_url_template()
+
+        self.assertEqual(
+            image_url_template,
+            'https://images.example.test/large/1/3/__STEM__/'
+            'profimedia-__FILENAME__',
+        )
+
+
+class MatrixDownloadTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(username='matrix-user', password='unused')
+        self.user_matrix = UserMetricMatrix(user=self.user, scaling_factor=1.5)
+        self.user_matrix.set_matrix(np.asarray([[1.0, 0.0], [0.0, 2.0]]))
+        self.user_matrix.save()
+
+        session = self.client.session
+        session['user_id'] = self.user.id
+        session.save()
+
+    def test_download_contains_the_complete_current_matrix_folder(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            matrix_folder = os.path.join(temp_dir, 'matrix_3')
+            os.makedirs(os.path.join(matrix_folder, 'extra'))
+            with open(os.path.join(matrix_folder, 'matrix.npy'), 'wb') as matrix_file:
+                np.save(matrix_file, self.user_matrix.get_matrix())
+            with open(os.path.join(matrix_folder, 'matrix_metadata.json'), 'w') as metadata_file:
+                json.dump({'scaling_factor': 1.5}, metadata_file)
+            with open(os.path.join(matrix_folder, 'queries.json'), 'w') as queries_file:
+                json.dump([{'query': 'red car'}], queries_file)
+            with open(os.path.join(matrix_folder, 'extra', 'notes.txt'), 'w') as notes_file:
+                notes_file.write('kept in export')
+
+            with patch.object(
+                views.QueryLogger,
+                'save_matrix_state',
+                return_value=matrix_folder,
+            ) as save_mock:
+                response = self.client.get(reverse('download_current_matrix'))
+                archive_bytes = b''.join(response.streaming_content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/zip')
+        self.assertIn('matrix-user_matrix_3.zip', response['Content-Disposition'])
+        self.assertEqual(response['Cache-Control'], 'no-store')
+        save_mock.assert_called_once_with(self.user, self.user_matrix, force=True)
+
+        with tempfile.SpooledTemporaryFile() as archive_file:
+            archive_file.write(archive_bytes)
+            archive_file.seek(0)
+            with zipfile.ZipFile(archive_file) as archive:
+                self.assertEqual(
+                    set(archive.namelist()),
+                    {
+                        'matrix_3/matrix.npy',
+                        'matrix_3/matrix_metadata.json',
+                        'matrix_3/queries.json',
+                        'matrix_3/extra/notes.txt',
+                    },
+                )
+
+    def test_download_requires_a_logged_in_user(self):
+        self.client.session.flush()
+
+        response = self.client.get(reverse('download_current_matrix'))
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()['error'], 'User not logged in')
 
 
 class MahalanobisSearchApiTests(SimpleTestCase):

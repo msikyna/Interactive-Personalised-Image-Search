@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from .services import image_similarity_service
 from .clip_service import clip_service
+from .image_urls import build_image_url
 from django.conf import settings
 from . import config
 from .matrix_cache import get_cached_matrix_for_user_matrix
@@ -18,6 +19,9 @@ import numpy as np
 import time
 import math
 import mimetypes
+import re
+import tempfile
+import zipfile
 
 
 def _distance_mode_for_metric(distance_metric):
@@ -1302,9 +1306,7 @@ def mahalanobis_search_api(request):
                 'position': rank,
                 'index': int(result['index']),
                 'image_name': image_name,
-                'image_url': request.build_absolute_uri(
-                    reverse('serve_image', kwargs={'image_path': image_name})
-                ),
+                'image_url': request.build_absolute_uri(build_image_url(image_name)),
                 'distance': float(result['distance']),
                 'embedding': np.asarray(vector, dtype=np.float32).tolist(),
             })
@@ -1845,7 +1847,7 @@ def logout_view(request):
 
 
 # Feedback and Metric Learning Views
-from .feedback import FeedbackManager, MatrixManager
+from .feedback import FeedbackManager, MatrixManager, QueryLogger
 from .models import FeedbackApplyJob, UserMetricMatrix
 import uuid
 
@@ -2243,6 +2245,91 @@ def reset_metric_matrix(request):
     except Exception as e:
         import traceback
         print("[ERROR] reset_metric_matrix failed", flush=True)
+        traceback.print_exc()
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+def download_current_matrix(request):
+    """Download the current matrix folder, including an up-to-date snapshot."""
+    if request.method != 'GET':
+        return JsonResponse({'error': 'GET required'}, status=405)
+
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'error': 'User not logged in'}, status=401)
+
+    try:
+        user = User.objects.get(id=user_id)
+        user_matrix_obj = UserMetricMatrix.objects.get(user=user)
+
+        # A username is also used as an on-disk directory name by QueryLogger.
+        # Reject path-like values before creating or reading an export folder.
+        username = str(user.username)
+        if not username or os.path.basename(username) != username or username in {'.', '..'}:
+            return JsonResponse({'error': 'Invalid username for matrix export'}, status=400)
+
+        # Force a snapshot so matrix.npy and matrix_metadata.json always match
+        # the current database state, even when periodic snapshots are disabled.
+        matrix_folder = QueryLogger.save_matrix_state(
+            user,
+            user_matrix_obj,
+            force=True,
+        )
+        if not matrix_folder or not os.path.isdir(matrix_folder):
+            return JsonResponse({'error': 'No matrix is available to download'}, status=404)
+
+        matrix_folder = os.path.realpath(matrix_folder)
+        folder_name = os.path.basename(matrix_folder)
+        if not re.fullmatch(r'matrix_\d+', folder_name):
+            return JsonResponse({'error': 'Invalid matrix export folder'}, status=400)
+
+        archive = tempfile.SpooledTemporaryFile(max_size=64 * 1024 * 1024, mode='w+b')
+        try:
+            with zipfile.ZipFile(
+                archive,
+                mode='w',
+                compression=zipfile.ZIP_DEFLATED,
+                allowZip64=True,
+            ) as zip_file:
+                for root, directories, files in os.walk(matrix_folder, followlinks=False):
+                    directories[:] = [
+                        directory for directory in directories
+                        if not os.path.islink(os.path.join(root, directory))
+                    ]
+                    for filename in files:
+                        file_path = os.path.join(root, filename)
+                        if os.path.islink(file_path):
+                            continue
+
+                        real_file_path = os.path.realpath(file_path)
+                        if os.path.commonpath([matrix_folder, real_file_path]) != matrix_folder:
+                            continue
+
+                        relative_path = os.path.relpath(real_file_path, matrix_folder)
+                        archive_path = os.path.join(folder_name, relative_path)
+                        zip_file.write(real_file_path, archive_path)
+
+            archive.seek(0)
+            safe_username = re.sub(r'[^A-Za-z0-9_.-]+', '_', username).strip('._-') or 'user'
+            response = FileResponse(
+                archive,
+                as_attachment=True,
+                filename=f'{safe_username}_{folder_name}.zip',
+                content_type='application/zip',
+            )
+            response['Cache-Control'] = 'no-store'
+            return response
+        except Exception:
+            archive.close()
+            raise
+
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=404)
+    except UserMetricMatrix.DoesNotExist:
+        return JsonResponse({'error': 'No learned matrix is available yet'}, status=404)
+    except Exception as e:
+        import traceback
+        print("[ERROR] download_current_matrix failed", flush=True)
         traceback.print_exc()
         return JsonResponse({'error': str(e)}, status=400)
 

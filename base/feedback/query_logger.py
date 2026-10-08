@@ -126,7 +126,7 @@ class QueryLogger:
         return matrix_folder
 
     @staticmethod
-    def save_matrix_state(user, user_matrix_obj, base_path='user_matrices'):
+    def save_matrix_state(user, user_matrix_obj, base_path='user_matrices', force=False):
         """
         Save the current matrix state to disk.
 
@@ -134,10 +134,15 @@ class QueryLogger:
             user: User object
             user_matrix_obj: UserMetricMatrix object
             base_path: Base directory for user folders
+            force: Save even when periodic matrix snapshots are disabled. This is
+                used when an up-to-date export has been explicitly requested.
+
+        Returns:
+            Path to the matrix folder, or None when snapshots are disabled.
         """
         # Matrix snapshots are large; keep them optional for performance.
-        if not getattr(config, 'SAVE_MATRIX_SNAPSHOTS', False):
-            return
+        if not force and not getattr(config, 'SAVE_MATRIX_SNAPSHOTS', False):
+            return None
 
         from .constants import FEEDBACK_TYPE_NAMES
 
@@ -169,6 +174,8 @@ class QueryLogger:
 
         if getattr(config, 'VERBOSE_RUNTIME_LOGS', False):
             print(f"    Matrix saved to: {matrix_file}")
+
+        return matrix_folder
 
     @staticmethod
     def log_query(user, user_matrix_obj, query_info, results, feedback_data=None, base_path='user_matrices'):

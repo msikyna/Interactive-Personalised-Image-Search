@@ -271,6 +271,12 @@ IMAGE_NAMES_FILE_IP = os.environ.get(
     'SIMSEARCH_IMAGE_NAMES_FILE_IP',
     DEFAULT_IMAGE_NAMES_FILE_IP
 ).strip()
+DISA_BASE_URL = os.environ.get('DISA_BASE_URL', '').strip()
+ALTERNATIVE_IMAGES_BASE_URL = os.environ.get('ALTERNATIVE_IMAGES_BASE_URL', '').strip()
+USE_DISA_PROFIMEDIA = _parse_bool(
+    os.environ.get('USE_DISA_PROFIMEDIA') or None,
+    True
+)
 IMAGE_X_SENDFILE = _parse_bool(
     os.environ.get('SIMSEARCH_IMAGE_X_SENDFILE'),
     DEFAULT_IMAGE_X_SENDFILE

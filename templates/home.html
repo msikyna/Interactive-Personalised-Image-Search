@@ -85,6 +85,7 @@
                     <div class="sidebar-buttons">
                         <button onclick="openSettingsModal()" class="btn btn-settings-white btn-sm">🔧 Change Settings</button>
                         <button onclick="resetMatrix()" class="btn btn-settings-outline btn-sm">🔄 Reset Matrix</button>
+                        <a href="{% url 'download_current_matrix' %}" class="btn btn-settings-outline btn-sm">⬇️ Download Matrix ZIP</a>
                     </div>
                 </div>
             </div>
@@ -190,7 +191,7 @@
                         {% elif results.query_type == 'image' %}
                             <div class="query-info-compact">
                                 <span class="query-label">Query Image:</span>
-                                <img src="{% url 'serve_image' results.anchor_name %}" alt="{{ results.anchor_name }}" class="query-thumbnail">
+                                <img src="{{ results.anchor_name|image_source_url }}" alt="{{ results.anchor_name }}" class="query-thumbnail">
                                 <span class="query-image-name">{{ results.anchor_name }}</span>
                             </div>
                         {% elif results.query_type == 'uploaded_image' %}
@@ -266,11 +267,11 @@
                         {% for result in results.results %}
                             <div class="image-item" data-image-index="{{ result.index }}" data-image-name="{{ result.image_name }}">
                                 <a href="{% url 'home' %}?image_index={{ result.index }}&metric={{ distance_metric|default:'cosine' }}&num_results={{ num_results|default:20 }}" class="image-link">
-                                    <img src="{% url 'serve_image' result.image_name %}"
+                                    <img src="{{ result.image_name|image_source_url }}"
                                          alt="{{ result.image_name }}"
                                          class="result-image"
                                          data-result-image
-                                         data-original-src="{% url 'serve_image' result.image_name %}"
+                                         data-original-src="{{ result.image_name|image_source_url }}"
                                          data-result-image-state="pending"
                                          loading="lazy"
                                          onerror="this.dataset.resultImageState='unavailable'; this.dataset.showingUnavailablePlaceholder='true'; this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f1f3f5%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23666%22%3EImage unavailable%3C/text%3E%3C/svg%3E';">
@@ -333,11 +334,11 @@
                         {% for image in random_images %}
                             <div class="image-item">
                                 <a href="{% url 'home' %}?image_index={{ image.index }}&metric={{ distance_metric|default:'cosine' }}&num_results=20" class="image-link">
-                                    <img src="{% url 'serve_image' image.image_name %}"
+                                    <img src="{{ image.image_name|image_source_url }}"
                                          alt="{{ image.image_name }}"
                                          class="result-image"
                                          data-result-image
-                                         data-original-src="{% url 'serve_image' image.image_name %}"
+                                         data-original-src="{{ image.image_name|image_source_url }}"
                                          data-result-image-state="pending"
                                          loading="lazy"
                                          onerror="this.dataset.resultImageState='unavailable'; this.dataset.showingUnavailablePlaceholder='true'; this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f1f3f5%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23666%22%3EImage unavailable%3C/text%3E%3C/svg%3E';">
@@ -1408,6 +1409,11 @@
             width: 100%;
             font-size: 12px;
             padding: 6px 10px;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
         }
 
         .params-inline {
@@ -1721,9 +1727,10 @@
     </div>
 
     <script>
+        {% image_source_url_template as configuredImageSourceUrlTemplate %}
         const sessionId = '{{ session_id }}';
         const csrfToken = '{{ csrf_token }}';
-        const serveImageUrlTemplate = "{% url 'serve_image' image_path='__IMAGE_PATH__' %}";
+        const imageSourceUrlTemplate = "{{ configuredImageSourceUrlTemplate|escapejs }}";
         const feedbackApplyStatusUrlTemplate = "{% url 'feedback_apply_job_status' '00000000-0000-0000-0000-000000000000' %}";
         let hasFeedback = false;
         let availableSettings = null;
@@ -1747,7 +1754,11 @@
 
             activeProbe.cancelled = true;
             window.clearTimeout(activeProbe.timeoutId);
-            activeProbe.controller.abort();
+            if (activeProbe.imageProbe) {
+                activeProbe.imageProbe.onload = null;
+                activeProbe.imageProbe.onerror = null;
+                activeProbe.imageProbe.src = '';
+            }
             activeResultImageProbes.delete(image);
         }
 
@@ -1897,9 +1908,9 @@
                 return;
             }
 
-            const controller = new AbortController();
+            const imageProbe = new Image();
             const activeProbe = {
-                controller,
+                imageProbe,
                 timeoutId: null,
                 cancelled: false,
             };
@@ -1908,6 +1919,8 @@
                 if (activeProbe.cancelled) return;
                 activeProbe.cancelled = true;
                 window.clearTimeout(activeProbe.timeoutId);
+                imageProbe.onload = null;
+                imageProbe.onerror = null;
                 activeResultImageProbes.delete(image);
                 setResultImageAvailability(
                     image,
@@ -1922,14 +1935,9 @@
             }, resultImageProbeTimeoutMs);
             activeResultImageProbes.set(image, activeProbe);
 
-            fetch(originalSource, {
-                method: 'HEAD',
-                cache: 'no-store',
-                credentials: 'same-origin',
-                signal: controller.signal,
-            })
-            .then(response => finish(response.ok))
-            .catch(() => finish(false));
+            imageProbe.onload = () => finish(true);
+            imageProbe.onerror = () => finish(false);
+            imageProbe.src = originalSource;
         }
 
         function monitorResultImage(image, generation) {
@@ -1962,8 +1970,8 @@
                 setResultImageAvailability(image, 'unavailable', generation);
             }, { once: true });
 
-            // Gallery images are lazy-loaded. A HEAD request checks every original
-            // URL without downloading off-screen image bodies or requiring scroll.
+            // Gallery images are lazy-loaded. A separate image probe checks every
+            // original URL without requiring the user to scroll it into view.
             probeResultImage(image, generation);
         }
 
@@ -2794,11 +2802,30 @@
         }
 
         function buildImageUrl(imageName) {
-            const encodedPath = String(imageName || '')
+            let parts = String(imageName || '')
+                .replaceAll('\\', '/')
+                .replace(/^\/+/, '')
                 .split('/')
-                .map(part => encodeURIComponent(part))
-                .join('/');
-            return serveImageUrlTemplate.replace('__IMAGE_PATH__', encodedPath);
+                .filter(part => part && part !== '.');
+            if (parts[0] === 'images') {
+                parts = parts.slice(1);
+            }
+            if (parts.length < 2 || parts.includes('..')) {
+                throw new Error(`Invalid indexed image name: ${imageName}`);
+            }
+
+            const folder = parts[0];
+            const filename = parts[parts.length - 1];
+            const extensionSeparator = filename.lastIndexOf('.');
+            if (extensionSeparator <= 0 || extensionSeparator === filename.length - 1) {
+                throw new Error(`Indexed image filename has no extension: ${imageName}`);
+            }
+            const stem = filename.slice(0, extensionSeparator);
+
+            return imageSourceUrlTemplate
+                .replaceAll('__FOLDER__', encodeURIComponent(folder))
+                .replaceAll('__FILENAME__', encodeURIComponent(filename))
+                .replaceAll('__STEM__', encodeURIComponent(stem));
         }
 
         function buildRankChangeHtml(result) {
