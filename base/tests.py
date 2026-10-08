@@ -10,7 +10,13 @@ from django.urls import reverse
 
 from . import views
 from . import config
-from .image_urls import build_image_url, build_image_url_template
+from . import image_urls
+from .image_urls import (
+    build_image_url,
+    build_image_url_template,
+    expanded_result_count,
+    filter_available_image_items,
+)
 from .models import User, UserMetricMatrix
 from .services import ImageSimilarityService
 
@@ -73,6 +79,71 @@ class ImageUrlTests(SimpleTestCase):
             'https://images.example.test/large/1/3/__STEM__/'
             'profimedia-__FILENAME__',
         )
+
+    def test_alternative_mode_expands_requested_count_ten_times(self):
+        with patch.object(config, 'USE_DISA_PROFIMEDIA', False):
+            self.assertEqual(expanded_result_count(20), 200)
+            self.assertEqual(expanded_result_count(20, available_count=125), 125)
+
+    def test_disa_mode_does_not_expand_requested_count(self):
+        with patch.object(config, 'USE_DISA_PROFIMEDIA', True):
+            self.assertEqual(expanded_result_count(20), 20)
+
+    def test_alternative_filter_keeps_first_successful_images_in_order(self):
+        items = [
+            {'index': index, 'image_name': f'558/{index:010d}.jpg'}
+            for index in range(1, 5)
+        ]
+
+        def is_available(image_url):
+            return any(image_id in image_url for image_id in ('0000000002', '0000000004'))
+
+        with (
+            patch.object(config, 'USE_DISA_PROFIMEDIA', False),
+            patch.object(
+                config,
+                'ALTERNATIVE_IMAGES_BASE_URL',
+                'https://images.example.test/large/1/3/',
+            ),
+            patch.object(image_urls, 'IMAGE_PROBE_WORKERS', 4),
+            patch.object(image_urls, '_image_url_is_available', side_effect=is_available),
+        ):
+            filtered_items = filter_available_image_items(items, requested_count=2)
+
+        self.assertEqual([item['index'] for item in filtered_items], [2, 4])
+
+    def test_disa_filter_does_not_probe_remote_images(self):
+        items = [
+            {'index': 1, 'image_name': '558/0000000001.jpg'},
+            {'index': 2, 'image_name': '558/0000000002.jpg'},
+            {'index': 3, 'image_name': '558/0000000003.jpg'},
+        ]
+
+        with (
+            patch.object(config, 'USE_DISA_PROFIMEDIA', True),
+            patch.object(image_urls, '_image_url_is_available') as availability_mock,
+        ):
+            filtered_items = filter_available_image_items(items, requested_count=2)
+
+        self.assertEqual([item['index'] for item in filtered_items], [1, 2])
+        availability_mock.assert_not_called()
+
+    def test_image_probe_rejects_not_found_and_server_error_responses(self):
+        for status in (404, 500):
+            with self.subTest(status=status):
+                error = image_urls.HTTPError(
+                    'https://images.example.test/image.jpg',
+                    status,
+                    'image unavailable',
+                    hdrs=None,
+                    fp=None,
+                )
+                with patch.object(image_urls, 'urlopen', side_effect=error):
+                    is_available = image_urls._image_url_is_available(
+                        'https://images.example.test/image.jpg'
+                    )
+
+                self.assertFalse(is_available)
 
 
 class MatrixDownloadTests(TestCase):

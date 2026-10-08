@@ -6,7 +6,11 @@ from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from .services import image_similarity_service
 from .clip_service import clip_service
-from .image_urls import build_image_url
+from .image_urls import (
+    build_image_url,
+    expanded_result_count,
+    filter_available_image_items,
+)
 from django.conf import settings
 from . import config
 from .matrix_cache import get_cached_matrix_for_user_matrix
@@ -27,6 +31,22 @@ import zipfile
 def _distance_mode_for_metric(distance_metric):
     metric = (distance_metric or '').lower()
     return 'dot_product' if metric in ('cosine', 'dot_product') else 'euclidean'
+
+
+def _retrieval_result_count(requested_count):
+    image_names = image_similarity_service.image_names
+    available_count = len(image_names) if image_names is not None else None
+    return expanded_result_count(requested_count, available_count=available_count)
+
+
+def _filter_unavailable_results(results, requested_count):
+    if config.USE_DISA_PROFIMEDIA:
+        return results
+
+    candidates = list(results.get('results', []) or [])
+    available_results = filter_available_image_items(candidates, requested_count)
+    results['results'] = available_results
+    return results
 
 
 def _current_dataset_dimension(default=768):
@@ -530,6 +550,9 @@ def home(request):
     upload_search = request.GET.get('upload_search', '')
     distance_metric = request.GET.get('metric', 'cosine')
     num_results = int(request.GET.get('num_results', 20))
+    retrieval_num_results = (
+        _retrieval_result_count(num_results) if dataset_loaded else num_results
+    )
 
     previous_session_id = request.session.get('feedback_session_id')
     user_id = request.session.get('user_id')
@@ -685,7 +708,7 @@ def home(request):
                     query_vector=image_vector,
                     metric_matrix=metric_matrix,
                     scaling_factor=scaling_factor,
-                    num_results=num_results,
+                    num_results=retrieval_num_results,
                     growth_factor=1.0,
                     distance_mode=distance_mode,
                     range_stage=range_stage,
@@ -694,10 +717,12 @@ def home(request):
             else:
                 results = image_similarity_service.search_by_vector(
                     query_vector=image_vector,
-                    num_results=num_results,
+                    num_results=retrieval_num_results,
                     distance_metric=distance_metric,
                     metric_matrix=metric_matrix
                 )
+
+            results = _filter_unavailable_results(results, num_results)
 
             results['query_type'] = 'uploaded_image'
             results['uploaded_image_name'] = request.session.get('uploaded_image_name', 'uploaded_image')
@@ -811,7 +836,7 @@ def home(request):
                     query_vector=text_vector,
                     metric_matrix=metric_matrix,
                     scaling_factor=scaling_factor,
-                    num_results=num_results,
+                    num_results=retrieval_num_results,
                     growth_factor=1.0,
                     distance_mode=distance_mode,
                     range_stage=range_stage,
@@ -820,10 +845,12 @@ def home(request):
             else:
                 results = image_similarity_service.search_by_vector(
                     query_vector=text_vector,
-                    num_results=num_results,
+                    num_results=retrieval_num_results,
                     distance_metric=distance_metric,
                     metric_matrix=metric_matrix
                 )
+
+            results = _filter_unavailable_results(results, num_results)
 
             results['query_text'] = text_query
             results['query_type'] = 'text'
@@ -934,7 +961,7 @@ def home(request):
                     query_vector=anchor_vector,
                     metric_matrix=metric_matrix,
                     scaling_factor=scaling_factor,
-                    num_results=num_results,
+                    num_results=retrieval_num_results,
                     growth_factor=1.0,
                     distance_mode=distance_mode,
                     range_stage=range_stage,
@@ -945,10 +972,12 @@ def home(request):
             else:
                 results = image_similarity_service.search_similar_images(
                     anchor_index=idx,
-                    num_results=num_results,
+                    num_results=retrieval_num_results,
                     distance_metric=distance_metric,
                     metric_matrix=metric_matrix
                 )
+
+            results = _filter_unavailable_results(results, num_results)
 
             results['query_type'] = 'image'
             context['results'] = results
@@ -1009,7 +1038,14 @@ def home(request):
     elif dataset_loaded:
         # Show 20 random images on page load
         context['total_images'] = len(image_similarity_service.image_names)
-        context['random_images'] = image_similarity_service.get_random_images(20)
+        random_image_count = 20
+        random_candidates = image_similarity_service.get_random_images(
+            _retrieval_result_count(random_image_count)
+        )
+        context['random_images'] = filter_available_image_items(
+            random_candidates,
+            random_image_count,
+        )
 
     # Update feedback log with total flow time and result counts (if feedback was applied)
     if is_new_query and (feedback_processing_matrix_save_ms > 0 or model_learning_ms > 0) and 'results' in context:
@@ -1261,6 +1297,7 @@ def mahalanobis_search_api(request):
         scaling_factor = float(MatrixManager.calculate_scaling_factor(metric_matrix))
         distance_mode = _distance_mode_for_metric(base_metric)
         use_filter_refine = scaling_factor > 1.0
+        retrieval_result_count = _retrieval_result_count(MAHALANOBIS_API_RESULT_COUNT)
         if use_filter_refine:
             range_stage, quick_radius_ratio = _progressive_filter_refine_params(
                 initial_request=True
@@ -1269,7 +1306,7 @@ def mahalanobis_search_api(request):
                 query_vector=query_vector,
                 metric_matrix=metric_matrix,
                 scaling_factor=scaling_factor,
-                num_results=MAHALANOBIS_API_RESULT_COUNT,
+                num_results=retrieval_result_count,
                 growth_factor=1.0,
                 distance_mode=distance_mode,
                 range_stage=range_stage,
@@ -1283,11 +1320,15 @@ def mahalanobis_search_api(request):
             range_stage = None
             search_results = image_similarity_service.search_by_vector(
                 query_vector=query_vector,
-                num_results=MAHALANOBIS_API_RESULT_COUNT,
+                num_results=retrieval_result_count,
                 distance_metric=base_metric,
             )
             result_metric_name = base_metric
             search_mode = 'base_knn'
+        search_results = _filter_unavailable_results(
+            search_results,
+            MAHALANOBIS_API_RESULT_COUNT,
+        )
         raw_results = sorted(
             search_results.get('results', []),
             key=lambda result: float(result['distance']),
@@ -1354,6 +1395,7 @@ def search_api(request):
     try:
         anchor_index = int(request.GET.get('anchor', 0))
         num_results = int(request.GET.get('num_results', 20))
+        retrieval_num_results = _retrieval_result_count(num_results)
         distance_metric = request.GET.get('metric', 'euclidean')
         query_signature = _build_query_signature(request, image_index=anchor_index)
         _maybe_reset_matrix_on_query_change(
@@ -1390,7 +1432,7 @@ def search_api(request):
                 query_vector=anchor_vector,
                 metric_matrix=metric_matrix,
                 scaling_factor=scaling_factor,
-                num_results=num_results,
+                num_results=retrieval_num_results,
                 growth_factor=1.0,
                 distance_mode=distance_mode,
                 range_stage=range_stage,
@@ -1406,10 +1448,12 @@ def search_api(request):
             )
             results = image_similarity_service.search_similar_images(
                 anchor_index=anchor_index,
-                num_results=num_results,
+                num_results=retrieval_num_results,
                 distance_metric=distance_metric,
                 metric_matrix=metric_matrix
             )
+
+        results = _filter_unavailable_results(results, num_results)
 
         # Store query info in session for feedback
         request.session['current_query_vector'] = anchor_vector.tolist()
@@ -1486,6 +1530,7 @@ def text_search_api(request):
         _finalize_previous_query_ranking_time(request)
 
         num_results = int(request.GET.get('num_results', 20))
+        retrieval_num_results = _retrieval_result_count(num_results)
         distance_metric = request.GET.get('metric', 'cosine')
 
         if not clip_service.model_loaded:
@@ -1527,7 +1572,7 @@ def text_search_api(request):
                 query_vector=text_vector,
                 metric_matrix=metric_matrix,
                 scaling_factor=scaling_factor,
-                num_results=num_results,
+                num_results=retrieval_num_results,
                 growth_factor=1.0,
                 distance_mode=distance_mode,
                 range_stage=range_stage,
@@ -1536,10 +1581,12 @@ def text_search_api(request):
         else:
             results = image_similarity_service.search_by_vector(
                 query_vector=text_vector,
-                num_results=num_results,
+                num_results=retrieval_num_results,
                 distance_metric=distance_metric,
                 metric_matrix=metric_matrix
             )
+
+        results = _filter_unavailable_results(results, num_results)
 
         results['query_text'] = text_query
         results['clip_encode_ms'] = round(clip_encode_ms, 3)
@@ -2543,6 +2590,7 @@ def rerun_query(request):
 
         query_vector = np.array(query_vector)
         num_results = int(request.POST.get('num_results', 20))
+        retrieval_num_results = _retrieval_result_count(num_results)
         distance_metric = request.POST.get('metric', 'cosine')
         background_only = str(request.POST.get('background_only', '')).strip() == '1'
         progressive_full = str(request.POST.get('progressive_full', '')).strip() == '1'
@@ -2606,7 +2654,7 @@ def rerun_query(request):
                 query_vector=query_vector,
                 metric_matrix=metric_matrix,
                 scaling_factor=scaling_factor,
-                num_results=num_results,
+                num_results=retrieval_num_results,
                 growth_factor=1.0,
                 distance_mode=distance_mode,
                 range_stage=range_stage,
@@ -2615,10 +2663,12 @@ def rerun_query(request):
         else:
             results = image_similarity_service.search_by_vector(
                 query_vector=query_vector,
-                num_results=num_results,
+                num_results=retrieval_num_results,
                 distance_metric=distance_metric,
                 metric_matrix=metric_matrix
             )
+
+        results = _filter_unavailable_results(results, num_results)
 
         # Add query info to results
         results['query_type'] = query_type
