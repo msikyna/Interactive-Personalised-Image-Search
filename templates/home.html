@@ -34,6 +34,27 @@
         </div>
     </div>
 
+    <!-- Shown only when every image in the current top-k result set fails to load. -->
+    <div id="imageAvailabilityModal"
+         class="image-availability-modal"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="imageAvailabilityModalTitle"
+         aria-describedby="imageAvailabilityModalMessage"
+         hidden>
+        <div class="image-availability-modal-content">
+            <div class="image-availability-modal-icon" aria-hidden="true">⚠️</div>
+            <h2 id="imageAvailabilityModalTitle">Search images temporarily unavailable</h2>
+            <p id="imageAvailabilityModalMessage"></p>
+            <button id="imageAvailabilityModalClose"
+                    type="button"
+                    class="btn btn-primary"
+                    onclick="closeImageAvailabilityModal()">
+                Close
+            </button>
+        </div>
+    </div>
+
     <div class="container">
 
         {% if dataset_loaded %}
@@ -229,14 +250,30 @@
                         </div>
                     {% endif %}
 
-                    <div class="image-grid">
+                    <div id="imageAvailabilityNotice"
+                         class="image-availability-notice"
+                         role="status"
+                         aria-live="polite"
+                         hidden>
+                        <span class="image-availability-notice-icon" aria-hidden="true">⚠️</span>
+                        <div>
+                            <strong>Some images are temporarily unavailable.</strong>
+                            <p id="imageAvailabilityNoticeMessage"></p>
+                        </div>
+                    </div>
+
+                    <div class="image-grid" id="resultsImageGrid">
                         {% for result in results.results %}
                             <div class="image-item" data-image-index="{{ result.index }}" data-image-name="{{ result.image_name }}">
                                 <a href="{% url 'home' %}?image_index={{ result.index }}&metric={{ distance_metric|default:'cosine' }}&num_results={{ num_results|default:20 }}" class="image-link">
                                     <img src="{% url 'serve_image' result.image_name %}"
                                          alt="{{ result.image_name }}"
+                                         class="result-image"
+                                         data-result-image
+                                         data-original-src="{% url 'serve_image' result.image_name %}"
+                                         data-result-image-state="pending"
                                          loading="lazy"
-                                         onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23ddd%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23666%22%3ENo image%3C/text%3E%3C/svg%3E';">
+                                         onerror="this.dataset.resultImageState='unavailable'; this.dataset.showingUnavailablePlaceholder='true'; this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f1f3f5%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23666%22%3EImage unavailable%3C/text%3E%3C/svg%3E';">
                                 </a>
                                 <div class="image-info">
                                     <p class="distance">Distance: {{ result.distance|floatformat:5 }}</p>
@@ -414,6 +451,54 @@
             font-weight: 500;
         }
 
+        .image-availability-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(3px);
+        }
+
+        .image-availability-modal[hidden] {
+            display: none;
+        }
+
+        .image-availability-modal-content {
+            width: min(100%, 500px);
+            padding: 32px;
+            border-radius: 14px;
+            background: white;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.35);
+            text-align: center;
+        }
+
+        .image-availability-modal-icon {
+            margin-bottom: 12px;
+            font-size: 40px;
+            line-height: 1;
+        }
+
+        .image-availability-modal-content h2 {
+            margin: 0 0 12px;
+            color: #2d3748;
+            font-size: 24px;
+        }
+
+        .image-availability-modal-content p {
+            margin: 0 0 24px;
+            color: #4a5568;
+            font-size: 16px;
+            line-height: 1.55;
+        }
+
+        body.image-availability-modal-open {
+            overflow: hidden;
+        }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -475,6 +560,38 @@
             background-color: #d4edda;
             border: 1px solid #28a745;
             color: #155724;
+        }
+
+        .image-availability-notice {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-top: 18px;
+            padding: 14px 16px;
+            border: 1px solid #f2c66d;
+            border-radius: 8px;
+            background: #fff8e6;
+            color: #6b4f12;
+        }
+
+        .image-availability-notice[hidden] {
+            display: none;
+        }
+
+        .image-availability-notice-icon {
+            flex: 0 0 auto;
+            font-size: 20px;
+            line-height: 1.2;
+        }
+
+        .image-availability-notice strong {
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .image-availability-notice p {
+            margin: 0;
+            line-height: 1.45;
         }
 
         .search-controls {
@@ -842,6 +959,16 @@
 
         .image-item:hover {
             border-color: #b9c8df;
+        }
+
+        .image-item.result-image-unavailable {
+            border-color: #e2c98f;
+            background: #fffdf7;
+        }
+
+        .image-item.result-image-unavailable .feedback-buttons {
+            opacity: 0.45;
+            pointer-events: none;
         }
 
         .image-info {
@@ -1589,6 +1716,246 @@
         let progressiveFetchInFlight = false;
         let feedbackApplyPromise = null;
         let resultsDeliveredAtPerfMs = null;
+        const unavailableImagePlaceholder = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f1f3f5%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23666%22%3EImage unavailable%3C/text%3E%3C/svg%3E';
+        const resultImageProbeTimeoutMs = 15000;
+        const activeResultImageProbes = new Map();
+        let resultAvailabilityGeneration = 0;
+        let availabilityModalDismissedGeneration = -1;
+        let availabilityModalPreviousFocus = null;
+
+        function cancelResultImageProbe(image) {
+            const activeProbe = activeResultImageProbes.get(image);
+            if (!activeProbe) return;
+
+            activeProbe.cancelled = true;
+            window.clearTimeout(activeProbe.timeoutId);
+            activeProbe.controller.abort();
+            activeResultImageProbes.delete(image);
+        }
+
+        function clearResultImageProbes() {
+            Array.from(activeResultImageProbes.keys()).forEach(cancelResultImageProbe);
+        }
+
+        function closeImageAvailabilityModal(options = {}) {
+            const modal = document.getElementById('imageAvailabilityModal');
+            if (!modal) return;
+
+            if (options.dismiss !== false) {
+                availabilityModalDismissedGeneration = resultAvailabilityGeneration;
+            }
+
+            const wasOpen = !modal.hidden;
+            modal.hidden = true;
+            document.body.classList.remove('image-availability-modal-open');
+
+            if (
+                wasOpen &&
+                options.restoreFocus !== false &&
+                availabilityModalPreviousFocus &&
+                typeof availabilityModalPreviousFocus.focus === 'function'
+            ) {
+                availabilityModalPreviousFocus.focus();
+            }
+            availabilityModalPreviousFocus = null;
+        }
+
+        function openImageAvailabilityModal(totalImages) {
+            if (availabilityModalDismissedGeneration === resultAvailabilityGeneration) {
+                return;
+            }
+
+            const modal = document.getElementById('imageAvailabilityModal');
+            const message = document.getElementById('imageAvailabilityModalMessage');
+            const closeButton = document.getElementById('imageAvailabilityModalClose');
+            if (!modal || !message) return;
+
+            message.textContent = `We found ${totalImages} top ${totalImages === 1 ? 'result' : 'results'}, but none of the images could be loaded because our image storage service is temporarily unavailable. Please come back in a few days and try again.`;
+
+            if (modal.hidden) {
+                availabilityModalPreviousFocus = document.activeElement;
+                modal.hidden = false;
+                document.body.classList.add('image-availability-modal-open');
+                if (closeButton) {
+                    closeButton.focus();
+                }
+            }
+        }
+
+        function refreshResultImageAvailability() {
+            const grid = document.getElementById('resultsImageGrid');
+            const notice = document.getElementById('imageAvailabilityNotice');
+            const noticeMessage = document.getElementById('imageAvailabilityNoticeMessage');
+            if (!grid || !notice || !noticeMessage) return;
+
+            const images = Array.from(grid.querySelectorAll('img[data-result-image]'));
+            const totalImages = images.length;
+            const unavailableImages = images.filter(
+                image => image.dataset.resultImageState === 'unavailable'
+            ).length;
+
+            if (totalImages === 0 || unavailableImages === 0) {
+                notice.hidden = true;
+                if (!document.getElementById('imageAvailabilityModal')?.hidden) {
+                    closeImageAvailabilityModal({ dismiss: false, restoreFocus: false });
+                }
+                return;
+            }
+
+            if (unavailableImages === totalImages) {
+                notice.hidden = true;
+                openImageAvailabilityModal(totalImages);
+                return;
+            }
+
+            if (!document.getElementById('imageAvailabilityModal')?.hidden) {
+                closeImageAvailabilityModal({ dismiss: false, restoreFocus: false });
+            }
+
+            noticeMessage.textContent = `${unavailableImages} of the ${totalImages} top results could not be loaded because our image storage service is experiencing an issue. Please come back in a few days to see the missing images.`;
+            notice.hidden = false;
+        }
+
+        function setResultImageAvailability(image, state, generation) {
+            if (
+                !image ||
+                !image.isConnected ||
+                image.dataset.resultAvailabilityGeneration !== String(generation)
+            ) {
+                return;
+            }
+
+            cancelResultImageProbe(image);
+            image.dataset.resultImageState = state;
+            const imageItem = image.closest('.image-item');
+            const imageUnavailable = state === 'unavailable';
+
+            if (imageItem) {
+                imageItem.querySelectorAll('.feedback-btn').forEach(button => {
+                    button.disabled = imageUnavailable;
+                    if (imageUnavailable) {
+                        button.setAttribute('aria-disabled', 'true');
+                    } else {
+                        button.removeAttribute('aria-disabled');
+                    }
+                });
+            }
+
+            if (imageUnavailable) {
+                if (imageItem) {
+                    imageItem.classList.add('result-image-unavailable');
+                }
+                if (image.dataset.showingUnavailablePlaceholder !== 'true') {
+                    image.dataset.showingUnavailablePlaceholder = 'true';
+                    image.removeAttribute('onerror');
+                    image.src = unavailableImagePlaceholder;
+                }
+            } else {
+                if (imageItem) {
+                    imageItem.classList.remove('result-image-unavailable');
+                }
+            }
+
+            refreshResultImageAvailability();
+        }
+
+        function probeResultImage(image, generation) {
+            const originalSource = image.dataset.originalSrc;
+            if (!originalSource) {
+                setResultImageAvailability(image, 'unavailable', generation);
+                return;
+            }
+
+            const controller = new AbortController();
+            const activeProbe = {
+                controller,
+                timeoutId: null,
+                cancelled: false,
+            };
+
+            const finish = isAvailable => {
+                if (activeProbe.cancelled) return;
+                activeProbe.cancelled = true;
+                window.clearTimeout(activeProbe.timeoutId);
+                activeResultImageProbes.delete(image);
+                setResultImageAvailability(
+                    image,
+                    isAvailable ? 'available' : 'unavailable',
+                    generation
+                );
+            };
+
+            activeProbe.timeoutId = window.setTimeout(() => {
+                controller.abort();
+                finish(false);
+            }, resultImageProbeTimeoutMs);
+            activeResultImageProbes.set(image, activeProbe);
+
+            fetch(originalSource, {
+                method: 'HEAD',
+                cache: 'no-store',
+                credentials: 'same-origin',
+                signal: controller.signal,
+            })
+            .then(response => finish(response.ok))
+            .catch(() => finish(false));
+        }
+
+        function monitorResultImage(image, generation) {
+            image.dataset.resultAvailabilityGeneration = String(generation);
+
+            if (image.dataset.resultImageState === 'unavailable') {
+                setResultImageAvailability(image, 'unavailable', generation);
+                return;
+            }
+
+            if (image.complete) {
+                const loadedOriginal = (
+                    image.naturalWidth > 0 &&
+                    image.dataset.showingUnavailablePlaceholder !== 'true'
+                );
+                setResultImageAvailability(
+                    image,
+                    loadedOriginal ? 'available' : 'unavailable',
+                    generation
+                );
+                return;
+            }
+
+            image.addEventListener('load', () => {
+                if (image.dataset.showingUnavailablePlaceholder !== 'true') {
+                    setResultImageAvailability(image, 'available', generation);
+                }
+            }, { once: true });
+            image.addEventListener('error', () => {
+                setResultImageAvailability(image, 'unavailable', generation);
+            }, { once: true });
+
+            // Result images are lazy-loaded. A HEAD request checks every original
+            // URL without downloading off-screen image bodies or requiring scroll.
+            probeResultImage(image, generation);
+        }
+
+        function beginResultImageAvailabilityCheck() {
+            clearResultImageProbes();
+            resultAvailabilityGeneration += 1;
+            availabilityModalDismissedGeneration = -1;
+            closeImageAvailabilityModal({ dismiss: false, restoreFocus: false });
+
+            const notice = document.getElementById('imageAvailabilityNotice');
+            if (notice) {
+                notice.hidden = true;
+            }
+
+            const grid = document.getElementById('resultsImageGrid');
+            if (!grid) return;
+
+            const generation = resultAvailabilityGeneration;
+            grid.querySelectorAll('img[data-result-image]').forEach(image => {
+                monitorResultImage(image, generation);
+            });
+            refreshResultImageAvailability();
+        }
 
         function markResultsDeliveredNow() {
             try {
@@ -2471,10 +2838,17 @@
             imageItem.className = 'image-item';
             imageItem.setAttribute('data-image-index', result.index);
             imageItem.setAttribute('data-image-name', result.image_name);
+            const imageUrl = buildImageUrl(result.image_name);
 
             imageItem.innerHTML = `
                 <a href="{% url 'home' %}?image_index=${result.index}&metric={{ distance_metric|default:'cosine' }}&num_results={{ num_results|default:20 }}" class="image-link">
-                    <img src="${buildImageUrl(result.image_name)}" alt="${result.image_name}" loading="lazy">
+                    <img src="${imageUrl}"
+                         alt="${result.image_name}"
+                         class="result-image"
+                         data-result-image
+                         data-original-src="${imageUrl}"
+                         data-result-image-state="pending"
+                         loading="lazy">
                 </a>
                 <div class="image-info">
                     <p class="distance">Distance: ${result.distance.toFixed(5)}</p>
@@ -2578,7 +2952,7 @@
             }
 
             // Update the results grid with new results
-            const imageGrid = document.querySelector('.image-grid');
+            const imageGrid = document.getElementById('resultsImageGrid');
             if (!imageGrid) return;
 
             // Background progressive update: append only missing results and update distances in place.
@@ -2614,6 +2988,7 @@
                 });
 
                 reorderGridWithAnimation(imageGrid, orderedItems, previousRects);
+                beginResultImageAvailabilityCheck();
                 return;
             }
 
@@ -2622,6 +2997,7 @@
             results.results.forEach(result => {
                 imageGrid.appendChild(buildResultCard(result));
             });
+            beginResultImageAvailabilityCheck();
 
             // Ranking think-time starts when these results are rendered.
             markResultsDeliveredNow();
@@ -2665,8 +3041,26 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            beginResultImageAvailabilityCheck();
+
+            const availabilityModal = document.getElementById('imageAvailabilityModal');
+            if (availabilityModal) {
+                availabilityModal.addEventListener('click', event => {
+                    if (event.target === availabilityModal) {
+                        closeImageAvailabilityModal();
+                    }
+                });
+            }
+
             if (initialProgressivePending) {
                 fetchProgressiveFullResults();
+            }
+        });
+
+        document.addEventListener('keydown', event => {
+            const availabilityModal = document.getElementById('imageAvailabilityModal');
+            if (event.key === 'Escape' && availabilityModal && !availabilityModal.hidden) {
+                closeImageAvailabilityModal();
             }
         });
 
